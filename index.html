@@ -148,6 +148,7 @@ button.link:hover{background:none;color:#b6d0ff}
 .reg-nombre{flex:1;min-width:0}
 .reg-nombre b{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;font-weight:600;overflow-wrap:anywhere}
 .reg-nombre small{color:var(--mute);font-size:13px}
+.reg-nombre small a{color:var(--acc-hi)}
 .tipo{min-height:30px;padding:0 12px;border-radius:5px;font-size:13px;font-weight:600;white-space:nowrap}
 .tipo.venta{background:var(--acc);color:#fff}
 .tipo.venta:hover{background:#3d7df0}
@@ -164,6 +165,28 @@ details p{text-wrap:pretty}
 .toast.show{opacity:1;transform:translateX(-50%)}
 [hidden]{display:none!important}
 #quote{display:none}
+
+/* enlace de MakerWorld y acceso desde el celular */
+.enlace{margin-bottom:16px}
+.enlace>label{margin-bottom:6px}
+.enlace-row{display:flex;gap:8px;margin-bottom:12px}
+.enlace-row input{flex:1;min-width:0}
+.mw{display:grid;grid-template-columns:84px 1fr;gap:16px;background:var(--s2);border-radius:10px;padding:16px;margin-bottom:16px}
+.mw img{width:84px;height:84px;object-fit:cover;border-radius:6px;background:var(--field)}
+.mw-txt{min-width:0;display:flex;flex-direction:column;gap:4px}
+.mw-txt b{font-size:16px;font-weight:600;overflow-wrap:anywhere;line-height:1.3}
+.mw-txt label{margin-top:8px}
+.mw-txt .hint{margin:6px 0 0}
+a.boton{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border-radius:var(--r-sm);background:var(--s3);color:var(--ink);text-decoration:none;font-weight:500;transition-property:background-color,transform;transition-duration:.15s;transition-timing-function:var(--ease)}
+a.boton:hover{background:var(--s4)}
+a.boton:active{transform:translateY(1px) scale(.985)}
+a.boton:focus-visible{outline:2px solid var(--acc-hi);outline-offset:2px}
+.acts a.boton{flex:0 0 auto}
+.chk small{display:block;font-size:12.5px;margin-top:2px;word-break:break-all}
+.cel{margin-top:14px;max-width:640px}
+.cel p{margin:8px 0}
+.cel .url{display:flex;gap:8px;align-items:center;margin:8px 0;flex-wrap:wrap}
+.cel code{flex:1;min-width:0;background:var(--field);padding:10px 12px;border-radius:var(--r-sm);color:var(--acc-hi);font-size:13px;word-break:break-all}
 
 /* movimiento: entrada de las piezas y cambio de cifras */
 @keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
@@ -218,7 +241,9 @@ details p{text-wrap:pretty}
   .reg{padding:14px}
   .reg-grid{grid-template-columns:1fr 1fr}
   .reg-nombre small{display:block}
-  .acts button,.acts.left button{flex:1 1 100%}
+  .acts button,.acts.left button,.acts a.boton{flex:1 1 100%}
+  .mw{grid-template-columns:64px 1fr;gap:12px;padding:12px}
+  .mw img{width:64px;height:64px}
 }
 
 @media print{
@@ -260,6 +285,12 @@ details p{text-wrap:pretty}
       <h1>Calculadora <b>3D</b></h1>
       <p class="sub">Artillery Genius Pro · cama de 220 × 220 × 250 mm · PLA 1,75 mm con boquilla de 0,4 · todo en pesos argentinos</p>
       <p class="est" id="chipOrca" role="status">Conectando…</p>
+      <details class="cel" id="celular" hidden>
+        <summary>Usar desde el celular</summary>
+        <p>Mandate este enlace al celular (por WhatsApp, por ejemplo) y abrilo con el celular conectado al WiFi de tu casa. La primera vez guarda la clave y después abre directo. Desde afuera de casa no abre.</p>
+        <div id="celUrls"></div>
+        <p class="hint">Si no abre, ejecutá una sola vez <b>Permitir celular.bat</b> (clic derecho → Ejecutar como administrador). Quien tenga ese enlace puede usar tu calculadora y guardar archivos en tu carpeta de impresión: no lo compartas.</p>
+      </details>
     </div>
   </header>
 
@@ -268,10 +299,30 @@ details p{text-wrap:pretty}
       <section class="card c-pieza">
         <h2>Pieza</h2>
         <div class="seg" id="tipoSeg" role="group" aria-label="Para qué es la pieza"><button type="button" data-t="venta">Para venta</button><button type="button" data-t="personal">Para mí</button></div>
+        <div class="enlace" id="bloqueEnlace" hidden>
+          <label for="enlace"><span class="t">Enlace de MakerWorld</span></label>
+          <div class="enlace-row">
+            <input id="enlace" type="url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Pegá acá el enlace de la pieza">
+            <button type="button" id="bEnlace">Leer</button>
+          </div>
+          <div class="estado" id="estadoEnlace" role="status" aria-live="polite" hidden></div>
+          <div class="mw" id="tarjetaMW" hidden>
+            <img id="mwPortada" alt="" width="84" height="84">
+            <div class="mw-txt">
+              <b id="mwTitulo"></b>
+              <span class="mute" id="mwMeta"></span>
+              <label for="perfilMW"><span class="t">Perfil de impresión</span></label>
+              <select id="perfilMW"></select>
+              <p class="hint" id="mwNota"></p>
+              <div class="acts left"><a class="boton" id="mwAbrir" target="_blank" rel="noopener noreferrer">Abrir en MakerWorld</a><button type="button" id="mwPC">Abrir en la PC</button></div>
+            </div>
+          </div>
+        </div>
         <button type="button" class="drop" id="drop" aria-describedby="estado">
-          <span id="dropTxt"><b>Arrastrá el archivo de la pieza</b>y calculo el costo solo<small>.stl · .3mf · .obj · .step · o el .gcode ya laminado (o tocá para elegirlo)</small></span>
+          <span id="dropTxt"><b>Arrastrá el archivo de la pieza</b>y calculo el costo solo<small>.stl · .3mf · .obj · .step · .zip · o el .gcode ya laminado (o tocá para elegirlo)</small></span>
         </button>
-        <input type="file" id="file" accept=".stl,.3mf,.obj,.step,.stp,.gcode,.gco,.g,.txt" hidden aria-label="Elegir el archivo de la pieza">
+        <input type="file" id="file" accept=".stl,.3mf,.obj,.step,.stp,.zip,.7z,.rar,.tar,.gz,.tgz,.gcode,.gco,.g,.txt" hidden aria-label="Elegir el archivo de la pieza">
+        <label class="chk" id="lGuardar" hidden><input type="checkbox" id="guardar"><span>Guardarla también en mi carpeta de impresión, descomprimida<small class="mute" id="rutaImprimir"></small></span></label>
         <div class="estado" id="estado" role="status" aria-live="polite" hidden></div>
         <div class="opts" id="opts">
           <label id="lProceso"><span class="t">Perfil de laminado</span><select id="proceso"></select></label>
@@ -302,6 +353,7 @@ details p{text-wrap:pretty}
           <label><span class="t">Costo de la luz</span><div class="f"><input id="kwh" type="number" step="any" min="0" class="hasu" style="padding-right:56px"><span class="u">$ / kWh</span></div></label>
           <label><span class="t">Lo que costó la impresora</span><div class="f"><input id="costoImp" type="number" step="any" min="0"></div></label>
           <label><span class="t">Vida útil estimada</span><div class="f"><input id="vida" type="number" step="any" min="1" class="hasu"><span class="u">h</span></div></label>
+          <label><span class="t">Tu impresora vs una Bambu (tiempo)</span><div class="f"><input id="factorBambu" type="number" step="0.1" min="1" class="hasu"><span class="u">×</span></div></label>
         </div>
         <p class="hint">Costo de la luz: dividí el total de la factura por los kWh que dice. Consumo: ~120 W es un promedio razonable para la Genius con PLA; con un medidor de enchufe sale el real. Desgaste por hora = costo × 1,2 ÷ vida útil. <button class="link" id="bReset">Volver a valores iniciales</button></p>
       </section>
@@ -407,10 +459,10 @@ details p{text-wrap:pretty}
 const $ = id => document.getElementById(id);
 const MAT = {PLA:{d:1.24,e:1,w:1}, PETG:{d:1.27,e:1.15,w:1.3}, ABS:{d:1.04,e:1.6,w:1.25}, TPU:{d:1.21,e:1.05,w:1.35}};
 const DEF = {nombre:'',mat:'PLA',gramos:30,horas:2,minutos:3,qty:1,desp:5,relleno:'',soportes:'perfil',orient:false,proceso:'',
-  precioKg:22000,watts:120,kwh:150,costoImp:450000,vida:3000,hTrab:0.25,valHora:6000,extras:0,margen:3,redondeo:100};
+  precioKg:22000,watts:120,kwh:150,costoImp:450000,vida:3000,factorBambu:2.5,hTrab:0.25,valHora:6000,extras:0,margen:3,redondeo:100,guardar:false};
 const IDS = Object.keys(DEF);
-const PRECIOS = ['precioKg','watts','kwh','costoImp','vida','hTrab','valHora','extras','margen','redondeo','desp'];
-const S = {server:false, orca:false, est:null, tipo:'venta', registro:[], filtro:'todas', file:null, manual:false, tok:0, archivo:'', perfil:'', origen:''};
+const PRECIOS = ['precioKg','watts','kwh','costoImp','vida','factorBambu','hTrab','valHora','extras','margen','redondeo','desp'];
+const S = {server:false, orca:false, est:null, tipo:'venta', registro:[], filtro:'todas', file:null, manual:false, tok:0, tokEnlace:0, mw:null, archivo:'', perfil:'', origen:''};
 let last = null;
 
 const store = {
@@ -538,6 +590,16 @@ async function leerGcode(file){
   aplicar(g, secs, file.name);
   S.archivo = file.name; S.perfil = '';
   setEstado('ok','<b>Leído del gcode</b> ('+src+'): '+(g!=null?Math.round(g*10)/10+' g':'sin gramos')+' · '+(secs!=null?dur(Math.floor(secs/3600), Math.round(secs%3600/60)):'sin tiempo'));
+  if(S.server && $('guardar').checked) guardarEnPC(file).then(t => { if(t) $('estado').insertAdjacentHTML('beforeend', '<br>' + t); });
+}
+const ultimoNombre = ruta => String(ruta).split(/[\\/]/).filter(Boolean).pop() || '';
+async function guardarEnPC(file){
+  try{
+    const r = await fetch('api/guardar?archivo=' + encodeURIComponent(file.name), {method:'POST', body:file});
+    const j = await r.json();
+    if(!j.ok) return '<b>No pude guardarlo en tu carpeta:</b> ' + esc(j.error);
+    return '<b>Guardado en tu carpeta de impresión:</b> ' + esc(ultimoNombre(j.guardado.ruta)) + ' (' + j.guardado.archivos + (j.guardado.archivos === 1 ? ' archivo' : ' archivos') + ')';
+  }catch(e){ return '<b>No pude guardarlo en tu carpeta:</b> el servidor no respondió.'; }
 }
 
 /* geometría para el estimado (STL binario/ASCII y OBJ) */
@@ -605,7 +667,7 @@ async function estimarArchivo(file, motivo){
 }
 async function laminarConOrca(file){
   const tok = ++S.tok;
-  const q = new URLSearchParams({archivo:file.name, mat:val('mat'), proceso:val('proceso'), soportes:val('soportes'), relleno:val('relleno')||'', orient:$('orient').checked?'1':'0'});
+  const q = new URLSearchParams({archivo:file.name, mat:val('mat'), proceso:val('proceso'), soportes:val('soportes'), relleno:val('relleno')||'', orient:$('orient').checked?'1':'0', guardar:$('guardar').checked?'1':'0'});
   setEstado('info','<b>Laminando con Orca…</b> <span id="segTimer">0</span> s');
   const t0 = Date.now(), iv = setInterval(() => { const e = $('segTimer'); if(e) e.textContent = Math.round((Date.now()-t0)/1000); }, 500);
   try{
@@ -622,6 +684,10 @@ async function laminarConOrca(file){
     let dimt = '';
     const ext = (file.name.match(/\.[^.]+$/)||[''])[0].toLowerCase();
     if(ext === '.stl' || ext === '.obj'){ try{ const s = medirMalla(await file.arrayBuffer(), ext); if(s) dimt = '<br>' + dimTexto(s).t; }catch(e){} }
+    if((j.archivos||[]).length > 1) dimt += '<br>Calculé las ' + j.archivos.length + ' piezas juntas: ' + esc(j.archivos.slice(0,6).join(', ')) + (j.archivos.length > 6 ? '…' : '');
+    if(j.placas > 1) dimt += '<br>' + j.placas + ' placas';
+    (j.avisos||[]).forEach(a => { dimt += '<br>' + esc(a); });
+    if(j.guardado) dimt += '<br><b>Guardada en tu carpeta de impresión:</b> ' + esc(ultimoNombre(j.guardado.ruta)) + ' (' + j.guardado.archivos + (j.guardado.archivos === 1 ? ' archivo' : ' archivos') + ')';
     setEstado('ok','<b>Laminado con Orca</b> · '+esc(j.perfil.replace(/\s*@.*$/,''))+' · relleno '+esc(j.relleno||'?')+' · '+(j.soportes?'con':'sin')+' soportes · '+j.capas+' capas<br>'+(Math.round(j.g*10)/10)+' g · '+dur(Math.floor(j.secs/3600), Math.round(j.secs%3600/60))+dimt);
   }catch(e){
     if(tok === S.tok) setEstado('err','No pude hablar con el servidor de la calculadora. ¿Sigue abierto? Abrila de nuevo con el atajo.');
@@ -631,6 +697,10 @@ async function procesarArchivo(file){
   if(!file) return;
   const ext = (file.name.match(/\.[^.]+$/)||[''])[0].toLowerCase();
   if(['.gcode','.gco','.g','.txt'].includes(ext)){ S.file = null; return leerGcode(file); }
+  if(['.zip','.7z','.rar','.tar','.gz','.tgz'].includes(ext) && !S.orca){
+    setEstado('warn','<b>Los comprimidos los abre la calculadora de tu PC.</b> Abrila con el atajo de la PC (o desde el celular, con el enlace que te armó la PC), o descomprimí y arrastrá el .stl.');
+    return;
+  }
   S.file = file;
   if(S.orca) return laminarConOrca(file);
   return estimarArchivo(file, '');
@@ -640,6 +710,69 @@ function relaminarSoon(){
   if(!S.file || S.manual) return;
   clearTimeout(tRe); tRe = setTimeout(() => procesarArchivo(S.file), 700);
 }
+
+/* ---------- enlace de MakerWorld ---------- */
+const PC_BAMBU = {'BL-P001':'X1 Carbon','BL-P002':'X1','C11':'P1P','C12':'P1S','N1':'A1 mini','N2S':'A1','O1D':'H2D','O1S':'H2S','O2D':'H2D Pro'};
+const durSecs = s => { const m = Math.max(1, Math.round(s/60)); return dur(Math.floor(m/60), m%60); };
+function setEstadoEnlace(clase, html){ const e = $('estadoEnlace'); e.className = 'estado ' + clase; e.innerHTML = html; e.hidden = false; }
+async function leerEnlace(){
+  const url = $('enlace').value.trim();
+  if(!url) return;
+  const tok = ++S.tokEnlace;
+  setEstadoEnlace('info', '<b>Leyendo la publicación…</b>');
+  $('tarjetaMW').hidden = true;
+  try{
+    const r = await fetch('api/enlace?url=' + encodeURIComponent(url), {cache:'no-store'});
+    const j = await r.json();
+    if(tok !== S.tokEnlace) return;
+    if(!j.ok){ setEstadoEnlace('err', esc(j.error)); return; }
+    S.mw = j; $('estadoEnlace').hidden = true;
+    mostrarMW(j);
+  }catch(e){ if(tok === S.tokEnlace) setEstadoEnlace('err', 'No pude leer el enlace. ¿Sigue abierta la calculadora en la PC?'); }
+}
+function elegirPerfilMW(j){
+  const simple = lista => lista.find(x => !x.ams && x.colores === 1);
+  return j.perfiles.find(p => String(p.id) === String(j.perfilPedido))
+    || j.perfiles.find(p => String(p.id) === String(j.perfilPorDefecto) && !p.ams)
+    || simple(j.perfiles.filter(p => p.mat === val('mat'))) || simple(j.perfiles) || j.perfiles[0];
+}
+function mostrarMW(j){
+  const img = $('mwPortada');
+  if(/^https:\/\//.test(j.portada || '')){ img.src = j.portada; img.hidden = false; } else { img.removeAttribute('src'); img.hidden = true; }
+  $('mwTitulo').textContent = j.titulo;
+  $('mwMeta').textContent = [j.autor && 'por ' + j.autor, j.licencia].filter(Boolean).join(' · ');
+  $('perfilMW').innerHTML = j.perfiles.map(p => '<option value="' + p.id + '">' + esc(p.titulo) + ' · ' + Math.round(p.g) + ' g · ' + durSecs(p.secs) + (p.ams ? ' · AMS' : '') + (p.colores > 1 ? ' · ' + p.colores + ' colores' : '') + '</option>').join('');
+  $('perfilMW').value = elegirPerfilMW(j).id;
+  $('mwAbrir').href = j.url;
+  $('mwPC').hidden = !(S.server && S.est && !S.est.local);
+  $('tarjetaMW').hidden = false;
+  aplicarMW();
+}
+function aplicarMW(){
+  const j = S.mw;
+  if(!j) return;
+  const p = j.perfiles.find(x => String(x.id) === $('perfilMW').value);
+  if(!p) return;
+  const f = Math.max(1, num('factorBambu') || 1);
+  if([...$('mat').options].some(o => o.value === p.mat)) $('mat').value = p.mat;
+  $('gramos').value = Math.round(p.g*10)/10;
+  const mins = Math.max(1, Math.round(p.secs*f/60));
+  $('horas').value = Math.floor(mins/60); $('minutos').value = mins%60;
+  if(!val('nombre') || $('nombre').dataset.auto === '1'){ $('nombre').value = j.titulo; $('nombre').dataset.auto = '1'; }
+  S.manual = false; S.file = null; S.archivo = ''; S.perfil = 'MakerWorld: ' + p.titulo;
+  const maq = PC_BAMBU[p.maquina] || p.maquina;
+  $('mwNota').innerHTML = 'Peso y tiempo salen de la publicación' + (maq ? ' (perfil para una Bambu ' + esc(maq) + ')' : '') + '. El tiempo es el de la Bambu × ' + String(f).replace('.', ',') + ' para tu Genius Pro; el peso no cambia. '
+    + (p.ams || p.colores > 1 ? '<b>Este perfil usa varios colores (AMS): el peso suma todos.</b> ' : '')
+    + 'Para el número exacto, bajá el archivo (MakerWorld pide iniciar sesión) y elegilo arriba: puede ser el .zip o el .3mf.';
+  setEstado('warn', '<b>Calculado desde MakerWorld</b>: ' + Math.round(p.g*10)/10 + ' g · ' + durSecs(p.secs*f) + ' (aproximado)');
+  calc();
+}
+async function abrirEnPC(){
+  if(!S.mw) return;
+  try{ const r = await fetch('api/abrir?url=' + encodeURIComponent(S.mw.url), {method:'POST'}); const j = await r.json(); toast(j.ok ? 'Abierto en la pantalla de tu PC' : 'No pude abrirlo'); }
+  catch(e){ toast('No pude abrirlo'); }
+}
+const esMakerWorld = s => /^https?:\/\/([\w-]+\.)*makerworld\.com\//i.test(String(s).trim());
 
 /* ---------- seguimiento ---------- */
 const costoDe = e => e.tipo === 'personal' ? e.costoP : e.costoV;
@@ -677,7 +810,8 @@ function renderSeg(){
   document.querySelectorAll('#filtros button').forEach(b => { const on = b.dataset.f === S.filtro; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
   const vis = S.registro.filter(e => S.filtro === 'todas' || e.tipo === S.filtro);
   $('lista').innerHTML = vis.length ? vis.map(e => {
-    const meta = fechaCorta(e.fecha)+' · '+e.mat+' · '+(Math.round(e.g*10)/10)+' g · '+dur(e.h,e.mi)+' · '+e.qty+' u.';
+    const meta = fechaCorta(e.fecha)+' · '+e.mat+' · '+(Math.round(e.g*10)/10)+' g · '+dur(e.h,e.mi)+' · '+e.qty+' u.'
+      + (/^https:\/\/makerworld\.com\//.test(e.enlace || '') ? ' · <a href="'+esc(e.enlace)+'" target="_blank" rel="noopener noreferrer">MakerWorld</a>' : '');
     const top = '<div class="reg-top"><button class="tipo '+e.tipo+'" data-act="tipo" title="Cambiar entre venta y para mí">'+(e.tipo==='venta'?'Venta':'Para mí')+'</button>'
       + '<div class="reg-nombre"><b>'+esc(e.nombre)+'</b><small>'+meta+'</small></div><button data-act="del">Quitar</button></div>';
     if(e.tipo === 'personal') return '<div class="reg" data-id="'+e.id+'">'+top+'<div class="reg-grid"><div><span class="lbl">Costo de hacerla</span><b>'+money(e.costoP)+'</b></div></div></div>';
@@ -698,7 +832,7 @@ function renderSeg(){
 function guardarRegistro(){
   if(!last || (last.g <= 0 && last.total <= 0)){ toast('Cargá la pieza primero'); return; }
   S.registro.unshift({id:Date.now(), fecha:hoy(), nombre:last.nombre, tipo:last.tipo, mat:last.mat, g:last.g, h:last.h, mi:last.mi, qty:last.qty,
-    costoV:last.costoV, costoP:last.costoP, precio:last.precio, vendidas:0, cobrado:0, cobradoManual:false, archivo:S.archivo, perfil:S.perfil});
+    costoV:last.costoV, costoP:last.costoP, precio:last.precio, vendidas:0, cobrado:0, cobradoManual:false, archivo:S.archivo, perfil:S.perfil, enlace:S.mw ? S.mw.url : ''});
   persist(); renderSeg(); toast('Guardado en el seguimiento');
 }
 
@@ -757,6 +891,17 @@ function ligar(){
   window.addEventListener('dragover', e => e.preventDefault());
   window.addEventListener('drop', e => { e.preventDefault(); if(!drop.contains(e.target) && e.dataTransfer.files[0]) procesarArchivo(e.dataTransfer.files[0]); });
 
+  // enlace de MakerWorld: se lee solo al pegarlo
+  let tEnlace;
+  const programar = ms => { clearTimeout(tEnlace); if(esMakerWorld($('enlace').value)) tEnlace = setTimeout(leerEnlace, ms); };
+  $('enlace').addEventListener('input', () => programar(600));
+  $('enlace').addEventListener('paste', () => setTimeout(() => programar(50), 0));
+  $('enlace').addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); leerEnlace(); } });
+  $('bEnlace').addEventListener('click', leerEnlace);
+  $('perfilMW').addEventListener('change', aplicarMW);
+  $('factorBambu').addEventListener('input', () => { if(S.mw && /^MakerWorld/.test(S.perfil)) aplicarMW(); });
+  $('mwPC').addEventListener('click', abrirEnPC);
+  $('celUrls').addEventListener('click', e => { const b = e.target.closest('button[data-copy]'); if(b) copiar(b.dataset.copy); });
   $('bGuardar').addEventListener('click', guardarRegistro);
   $('mbGuardar').addEventListener('click', guardarRegistro);
   $('mbVer').addEventListener('click', () => document.querySelector('.res').scrollIntoView({behavior:'smooth', block:'start'}));
@@ -766,7 +911,7 @@ function ligar(){
   actualizarBarra();
   // en el celular no se arrastra: se toca para elegir (y sin filtro de extensiones, que algunos celulares usan para ocultar archivos)
   if(window.matchMedia && matchMedia('(hover:none)').matches){
-    $('dropTxt').innerHTML = '<b>Tocá acá y elegí el archivo de la pieza</b><small>.stl · .3mf · .obj · .step · o el .gcode ya laminado</small>';
+    $('dropTxt').innerHTML = '<b>Tocá acá y elegí el archivo de la pieza</b><small>.stl · .3mf · .obj · .step · .zip · o el .gcode ya laminado</small>';
     $('file').removeAttribute('accept');
   }
   $('bCopiar').addEventListener('click', () => copiar(textoCliente()));
@@ -829,6 +974,20 @@ function aplicarCfg(cfg){
   if(S.orca){ chip.className = 'est ok'; chip.textContent = 'Orca conectado'; }
   else if(S.server){ chip.className = 'est warn'; chip.textContent = 'Orca no encontrado · estimado'; }
   else { chip.className = 'est warn'; chip.textContent = 'Sin Orca · estimado desde el STL'; }
+  // con la calculadora de la PC (o el celular conectado a ella): enlace de MakerWorld, guardar en la carpeta y enlace para el celular
+  $('bloqueEnlace').hidden = !S.server;
+  const carpeta = S.server && S.est && S.est.carpeta;
+  $('lGuardar').hidden = !(carpeta && carpeta.existe);
+  if(carpeta && carpeta.existe) $('rutaImprimir').textContent = 'Se guarda en ' + carpeta.ruta;
+  const cel = S.server && S.est && S.est.local && S.est.celular;
+  if(cel){
+    $('celUrls').innerHTML = !cel.activo
+      ? '<p class="hint"><b>Todavía no está activado.</b> Ejecutá una sola vez <b>Permitir celular.bat</b> (clic derecho → Ejecutar como administrador) y abrí la calculadora de nuevo con el atajo: acá va a aparecer el enlace para el celular.</p>'
+      : cel.direcciones.length
+        ? cel.direcciones.map(d => '<div class="url"><code>' + esc(d.url) + '</code><button type="button" data-copy="' + esc(d.url) + '">Copiar</button></div>').join('')
+        : '<p class="hint">No encontré la dirección de tu PC en la red. ¿Está conectada al WiFi o por cable?</p>';
+    $('celular').hidden = false;
+  }
   ligar(); calc(); renderSeg();
 })();
 </script>
