@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#090b0e">
 <title>Calculadora 3D</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23090b0e'/%3E%3Crect x='5' y='6' width='22' height='4' rx='1' fill='%232f7bff'/%3E%3Crect x='7' y='10' width='3' height='15' fill='%23566275'/%3E%3Crect x='22' y='10' width='3' height='15' fill='%23566275'/%3E%3Crect x='13' y='13' width='6' height='7' rx='1' fill='%232f7bff'/%3E%3Crect x='4' y='25' width='24' height='3' rx='1' fill='%232f7bff'/%3E%3C/svg%3E">
 <style>
@@ -34,7 +35,9 @@ body::before{left:16px}body::after{right:16px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
 .card h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--mute);margin:0 0 14px;font-weight:600}
 .card h2::before{content:"";display:inline-block;width:8px;height:8px;background:var(--acc);margin-right:9px;border-radius:2px;vertical-align:1px}
-.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;align-items:end}
+input[type=number]{-moz-appearance:textfield;appearance:textfield}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 label{display:block;font-size:13px;color:var(--mute)}
 label>span.t{display:block;margin-bottom:4px}
 .f{position:relative}
@@ -80,6 +83,8 @@ button.link{border:0;background:none;color:var(--mute);padding:4px 0;text-decora
 .mute{color:var(--mute);font-size:13px}
 .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
 .acts button{flex:1}
+.acts.left{justify-content:flex-start}
+.acts.left button{flex:0 0 auto}
 .pos{color:var(--pos)}.neg{color:var(--neg)}
 /* seguimiento */
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
@@ -113,6 +118,46 @@ details summary{cursor:pointer;color:var(--ink);font-weight:600}
 .toast.show{opacity:1}
 [hidden]{display:none!important}
 #quote{display:none}
+/* barra de precio fija (solo celular y tablet) */
+.mbar{display:none}
+@media(max-width:860px){
+  .grid{gap:0}
+  .colL{display:contents}
+  .c-pieza{order:1}.res{order:2}.c-precios{order:3}#cardTrabajo{order:4}#cardGanancia{order:5}
+  .wrap{padding-bottom:104px}
+  .toast{bottom:92px}
+  .mbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:20;align-items:center;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+    background:rgba(9,14,24,.94);border-top:2px solid var(--acc);transition:transform .2s}
+  .mbar.off{transform:translateY(115%)}
+  .mb-txt{flex:1;min-width:0}
+  .mb-txt b{display:block;font-size:22px;line-height:1.1;letter-spacing:-.01em}
+  .mbar button{padding:10px 14px;white-space:nowrap}
+}
+@media(max-width:600px){
+  .wrap{padding:14px 12px 104px}
+  .hero{margin:2px 0 16px}
+  .hero h1{font-size:23px}
+  .badge{margin-left:6px;font-size:11px}
+  .card{padding:14px;border-radius:12px;margin-bottom:12px}
+  .row,.opts{grid-template-columns:1fr 1fr;gap:10px}
+  #lProceso{grid-column:1/-1}
+  input,select{font-size:16px;padding:10px}
+  .seg{display:flex;width:100%}
+  .seg button{flex:1;padding:10px 8px}
+  .drop{padding:16px 12px}
+  .big{font-size:36px}
+  .tiles{grid-template-columns:1fr 1fr;gap:8px}
+  .tile{padding:10px 12px}
+  .tile.main{grid-column:1/-1}
+  .tile b{font-size:18px}
+  .tbl{min-width:0;font-size:12.5px}
+  .tbl th{font-size:10px;padding:6px 3px;letter-spacing:.02em}
+  .tbl td{padding:8px 3px}
+  .reg-grid{grid-template-columns:1fr 1fr;gap:10px}
+  .reg-nombre small{display:block}
+  .acts button,.acts.left button{flex:1 1 100%}
+  .screen{box-shadow:0 0 0 3px #0a0d12,0 0 24px #2f7bff33}
+}
 @media print{
   body>*:not(#quote){display:none!important}
   #quote{display:block!important;color:#000;background:#fff;font:15px/1.5 system-ui,sans-serif;padding:20px}
@@ -154,12 +199,12 @@ details summary{cursor:pointer;color:var(--ink);font-weight:600}
   </header>
 
   <div class="grid">
-    <div>
-      <section class="card">
+    <div class="colL">
+      <section class="card c-pieza">
         <h2>Pieza</h2>
         <div class="seg" id="tipoSeg"><button data-t="venta">Para venta</button><button data-t="personal">Para mí</button></div>
         <div class="drop" id="drop">
-          <div><b>Arrastrá el archivo de la pieza</b> y calculo el costo solo<small>.stl · .3mf · .obj · .step · o el .gcode ya laminado (o tocá para elegirlo)</small></div>
+          <div id="dropTxt"><b>Arrastrá el archivo de la pieza</b> y calculo el costo solo<small>.stl · .3mf · .obj · .step · o el .gcode ya laminado (o tocá para elegirlo)</small></div>
           <input type="file" id="file" accept=".stl,.3mf,.obj,.step,.stp,.gcode,.gco,.g,.txt" hidden>
         </div>
         <div class="estado" id="estado" hidden></div>
@@ -184,7 +229,7 @@ details summary{cursor:pointer;color:var(--ink);font-weight:600}
         <p class="hint">El desperdicio cubre purga, soportes que se tiran y alguna impresión fallida. Con 5 % arrancás bien; subilo si fallás seguido.</p>
       </section>
 
-      <section class="card">
+      <section class="card c-precios">
         <h2>Tus precios y tu máquina</h2>
         <div class="row">
           <label><span class="t">Filamento (el material elegido)</span><div class="f"><input id="precioKg" type="number" step="any" min="0" class="hasu" style="padding-right:56px"><span class="u">$ / kg</span></div></label>
@@ -262,10 +307,10 @@ details summary{cursor:pointer;color:var(--ink);font-weight:600}
       <button data-f="todas">Todas</button><button data-f="venta">Para venta</button><button data-f="personal">Para mí</button>
     </div>
     <div id="lista"></div>
-    <div class="acts" style="justify-content:flex-start">
-      <button id="bCsv" style="flex:0 0 auto">Exportar a Excel (.csv)</button>
-      <button id="bResp" style="flex:0 0 auto">Respaldo (.json)</button>
-      <button id="bRest" style="flex:0 0 auto">Restaurar respaldo</button>
+    <div class="acts left">
+      <button id="bCsv">Exportar a Excel (.csv)</button>
+      <button id="bResp">Respaldo (.json)</button>
+      <button id="bRest">Restaurar respaldo</button>
       <input type="file" id="fileRest" accept=".json,application/json" hidden>
     </div>
     <p class="hint" id="dondeDatos"></p>
@@ -285,6 +330,11 @@ details summary{cursor:pointer;color:var(--ink);font-weight:600}
   </details>
 </main>
 
+<div class="mbar off" id="mbar">
+  <div class="mb-txt"><span class="lbl" id="mbLbl">Precio de venta · c/u</span><b id="mbVal">$ 0</b></div>
+  <button id="mbVer">Ver detalle</button>
+  <button class="pri" id="mbGuardar">Guardar</button>
+</div>
 <div id="quote"></div>
 <div class="toast" id="toast"></div>
 
@@ -368,6 +418,8 @@ function calc(){
 
   $('lblPrincipal').textContent = personal ? 'Lo que cuesta hacerla · por pieza' : 'Precio de venta por pieza';
   $('vVenta').textContent = money(personal ? unit : precio);
+  $('mbVal').textContent = money(personal ? unit : precio);
+  $('mbLbl').textContent = personal ? 'Cuesta hacerla · c/u' : 'Precio de venta · c/u';
   $('vUnit').textContent = money(costoV/qty);
   $('vGan').textContent = money(gan);
   $('vTotalP').textContent = money(total);
@@ -605,6 +657,11 @@ async function copiar(txt){
 }
 
 /* ---------- eventos ---------- */
+function actualizarBarra(){
+  const r = document.querySelector('.res .screen').getBoundingClientRect();
+  const visible = Math.min(r.bottom, innerHeight) - Math.max(r.top, 0);
+  $('mbar').classList.toggle('off', visible > r.height * 0.3);
+}
 function ligar(){
   IDS.forEach(id => {
     $(id).addEventListener('input', () => {
@@ -629,6 +686,17 @@ function ligar(){
   window.addEventListener('drop', e => { e.preventDefault(); if(!drop.contains(e.target) && e.dataTransfer.files[0]) procesarArchivo(e.dataTransfer.files[0]); });
 
   $('bGuardar').addEventListener('click', guardarRegistro);
+  $('mbGuardar').addEventListener('click', guardarRegistro);
+  $('mbVer').addEventListener('click', () => document.querySelector('.res').scrollIntoView({behavior:'smooth', block:'start'}));
+  // la barra fija de abajo se esconde cuando ya se ve el resultado completo
+  window.addEventListener('scroll', actualizarBarra, {passive:true});
+  window.addEventListener('resize', actualizarBarra);
+  actualizarBarra();
+  // en el celular no se arrastra: se toca para elegir (y sin filtro de extensiones, que algunos celulares usan para ocultar archivos)
+  if(window.matchMedia && matchMedia('(hover:none)').matches){
+    $('dropTxt').innerHTML = '<b>Tocá acá y elegí el archivo de la pieza</b><small>.stl · .3mf · .obj · .step · o el .gcode ya laminado</small>';
+    $('file').removeAttribute('accept');
+  }
   $('bCopiar').addEventListener('click', () => copiar(textoCliente()));
   $('bImprimir').addEventListener('click', () => {
     const q = last;
