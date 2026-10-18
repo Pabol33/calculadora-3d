@@ -186,6 +186,12 @@ a.boton:focus-visible{outline:2px solid var(--acc-hi);outline-offset:2px}
 .cel{margin-top:14px;max-width:640px}
 .cel p{margin:8px 0}
 .cel .url{display:flex;gap:8px;align-items:center;margin:8px 0;flex-wrap:wrap}
+.sesion{margin-top:18px;max-width:none}
+.sesion p{margin:8px 0}
+.sesion code{background:var(--field);padding:1px 6px;border-radius:4px;color:var(--ink)}
+.pasos{margin:8px 0 14px;padding-left:22px;color:var(--mute)}
+.pasos li{margin:4px 0}
+.pasos b{color:var(--ink);font-weight:600}
 .cel code{flex:1;min-width:0;background:var(--field);padding:10px 12px;border-radius:var(--r-sm);color:var(--acc-hi);font-size:13px;word-break:break-all}
 
 /* movimiento: entrada de las piezas y cambio de cifras */
@@ -316,6 +322,7 @@ a.boton:focus-visible{outline:2px solid var(--acc-hi);outline-offset:2px}
               <label for="soportesMW"><span class="t">¿Necesita soportes?</span></label>
               <select id="soportesMW"><option value="pub">Como en la publicación</option><option value="pocos">Pocos soportes (+20 % de tiempo, +10 % de peso)</option><option value="muchos">Muchos soportes (+50 % de tiempo, +25 % de peso)</option></select>
               <p class="hint" id="mwNota"></p>
+              <p class="hint" id="mwSesion"></p>
               <div class="acts left"><button type="button" class="pri" id="mwImprimir">Imprimirla</button><a class="boton" id="mwAbrir" target="_blank" rel="noopener noreferrer">Abrir en MakerWorld</a></div>
             </div>
           </div>
@@ -359,6 +366,22 @@ a.boton:focus-visible{outline:2px solid var(--acc-hi);outline-offset:2px}
           <label><span class="t">Tu impresora vs una Bambu (tiempo)</span><div class="f"><input id="factorBambu" type="number" step="0.1" min="1" class="hasu"><span class="u">×</span></div></label>
         </div>
         <p class="hint">Costo de la luz: dividí el total de la factura por los kWh que dice. Consumo: ~120 W es un promedio razonable para la Genius con PLA; con un medidor de enchufe sale el real. Desgaste por hora = costo × 1,2 ÷ vida útil. <button class="link" id="bReset">Volver a valores iniciales</button></p>
+        <details class="sesion" id="bloqueSesion" hidden>
+          <summary>Sesión de MakerWorld (para que «Imprimirla» baje sola la pieza)</summary>
+          <p>Con tu sesión, la calculadora le pide el archivo a MakerWorld como lo haría tu navegador, lo guarda en tu carpeta de impresión y calcula el costo, sin que toques nada. Sin sesión, abre la página en la PC y vos tocás «Descargar».</p>
+          <ol class="pasos">
+            <li>En el navegador de tu PC, con MakerWorld abierto y tu cuenta iniciada, apretá <b>F12</b>.</li>
+            <li>Andá a la pestaña <b>Application</b> (o «Aplicación») → <b>Cookies</b> → <b>makerworld.com</b>.</li>
+            <li>Buscá la fila <b>token</b> y copiá el valor completo.</li>
+            <li>Pegalo acá abajo y tocá «Guardar».</li>
+          </ol>
+          <div class="enlace-row">
+            <input id="tokenMW" type="password" autocomplete="off" spellcheck="false" aria-label="Valor del token de MakerWorld" placeholder="Pegá el valor de «token»">
+            <button type="button" id="bTokenMW">Guardar</button>
+          </div>
+          <p class="hint" id="sesionEstado" role="status" aria-live="polite"></p>
+          <p class="hint"><b>Cuidado:</b> ese token equivale a tu contraseña de MakerWorld. Queda en texto en <code>config.json</code> de esta PC (no se sube a git) y solo se manda a la API de MakerWorld; nunca se muestra. Las plataformas pueden no permitir las descargas automáticas: usalo bajo tu responsabilidad. Si lo pegaste donde no debías, cerrá sesión en MakerWorld para anularlo. <button type="button" class="link" id="bQuitarTokenMW">Quitar la sesión guardada</button></p>
+        </details>
       </section>
 
       <section class="card" id="cardTrabajo">
@@ -798,6 +821,30 @@ function sondearImprimir(ya){
     }catch(e){ setEstadoImprimir('warn', 'Perdí la conexión con la PC. Sigo intentando…'); sondearImprimir(false); }
   }, ya ? 250 : 3000);
 }
+/* ---------- tu sesión de MakerWorld (solo se maneja desde la PC) ---------- */
+function textoSesion(s){
+  if(!s || !s.activa) return 'Todavía no guardaste una sesión.';
+  const f = s.vence ? new Date(s.vence).toLocaleDateString('es-AR') : '';
+  return s.vencida ? 'La sesión guardada venció el ' + f + ': pegá una nueva.' : 'Sesión guardada' + (f ? ', vence el ' + f : '') + '.';
+}
+function mostrarSesion(){
+  const s = S.est && S.est.sesion;
+  $('sesionEstado').textContent = textoSesion(s);
+  $('bQuitarTokenMW').hidden = !(s && s.activa);
+  const ok = s && s.activa && !s.vencida;
+  $('mwSesion').textContent = ok ? 'Con tu sesión de MakerWorld guardada, «Imprimirla» la baja sola.'
+    : s && s.vencida ? 'Tu sesión de MakerWorld venció: pegá una nueva en «Tus precios y tu máquina» (en la PC). Mientras tanto «Imprimirla» abre la página para bajarla a mano.'
+    : '«Imprimirla» abre la página en tu PC y vos tocás «Descargar». Para que la baje sola, pegá tu sesión de MakerWorld en la calculadora de la PC («Tus precios y tu máquina»).';
+}
+async function guardarSesion(quitar){
+  try{
+    const r = await fetch('api/sesion', quitar ? {method:'DELETE'} : {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({token:$('tokenMW').value})});
+    const j = await r.json();
+    if(!j.ok){ $('sesionEstado').textContent = j.error || 'No pude guardar la sesión.'; return; }
+    S.est.sesion = j.sesion; $('tokenMW').value = '';
+    mostrarSesion(); toast(quitar ? 'Sesión quitada' : 'Sesión guardada');
+  }catch(e){ $('sesionEstado').textContent = 'No pude hablar con el servidor.'; }
+}
 // devuelve true si hay que seguir esperando
 function mostrarImprimir(j, sinAplicar){
   const carpetas = (j.carpetas || []).map(esc).join(' o ') || 'Descargas';
@@ -806,9 +853,20 @@ function mostrarImprimir(j, sinAplicar){
     setEstadoImprimir('info', '<b>Falta un paso en tu PC.</b> Se abrió la publicación en su navegador: elegí el perfil y tocá <b>Descargar</b> (MakerWorld pide tu cuenta). Cuando el archivo llegue a <b>' + carpetas + '</b> lo guardo en tu carpeta de impresión, descomprimido, y calculo el costo exacto.' + avisos + ' <button type="button" class="link" id="bCancelarImprimir">Cancelar</button>');
     return true;
   }
-  if(j.estado === 'procesando'){ setEstadoImprimir('info', '<b>Llegó el archivo.</b> Lo estoy guardando y calculando el costo…'); return true; }
+  if(j.estado === 'procesando'){
+    setEstadoImprimir('info', j.modo === 'sesion'
+      ? '<b>Bajándola con tu sesión de MakerWorld…</b> la guardo en tu carpeta de impresión y calculo el costo.'
+      : '<b>Llegó el archivo.</b> Lo estoy guardando y calculando el costo…');
+    return true;
+  }
   if(j.estado === 'listo' && j.resultado){
     const rr = j.resultado;
+    if(rr.g == null){
+      const gd0 = rr.guardado;
+      setEstadoImprimir('warn', (gd0 ? 'Guardada en tu carpeta de impresión: <b>' + esc(ultimoNombre(gd0.ruta)) + '</b> (' + gd0.archivos + (gd0.archivos === 1 ? ' archivo' : ' archivos') + ', ya descomprimida).' : 'Descargada.')
+        + '<br><b>No pude calcular el costo exacto con Orca</b> (' + esc(rr.error || 'sin detalle') + '). Queda el cálculo aproximado.' + avisos);
+      return false;
+    }
     if(!sinAplicar){
       aplicar(rr.g, rr.secs, S.mw ? S.mw.titulo : rr.origen); S.archivo = rr.origen; S.perfil = rr.perfil;
       setEstado('ok', '<b>Costo exacto con Orca</b> · ' + esc(String(rr.perfil || '').replace(/\s*@.*$/, '')) + ' · ' + (Math.round(rr.g*10)/10) + ' g · ' + dur(Math.floor(rr.secs/3600), Math.round(rr.secs%3600/60)));
@@ -951,6 +1009,9 @@ function ligar(){
   $('bEnlace').addEventListener('click', leerEnlace);
   $('perfilMW').addEventListener('change', aplicarMW);
   $('factorBambu').addEventListener('input', () => { if(S.mw && /^MakerWorld/.test(S.perfil)) aplicarMW(); });
+  $('bTokenMW').addEventListener('click', () => guardarSesion(false));
+  $('tokenMW').addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); guardarSesion(false); } });
+  $('bQuitarTokenMW').addEventListener('click', () => { if(confirm('¿Quitar la sesión de MakerWorld guardada en esta PC?')) guardarSesion(true); });
   $('mwImprimir').addEventListener('click', imprimirMW);
   $('soportesMW').addEventListener('change', aplicarMW);
   $('estadoImprimir').addEventListener('click', async e => {
@@ -1037,6 +1098,8 @@ function aplicarCfg(cfg){
   const carpeta = S.server && S.est && S.est.carpeta;
   $('lGuardar').hidden = !(carpeta && carpeta.existe);
   if(carpeta && carpeta.existe) $('rutaImprimir').textContent = 'Se guarda en ' + carpeta.ruta;
+  $('bloqueSesion').hidden = !(S.server && S.est && S.est.local);
+  mostrarSesion();
   const cel = S.server && S.est && S.est.local && S.est.celular;
   if(cel){
     $('celUrls').innerHTML = !cel.activo
