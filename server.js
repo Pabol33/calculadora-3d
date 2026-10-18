@@ -36,8 +36,7 @@ const DEFAULT_CONF = {
   },
   carpetaImprimir: path.join('F:\\Desktop', '\u3164'),
   celular: false, // lo activa «Permitir celular.bat» (abre el firewall solo a la red local y pone esto en true)
-  token: '',
-  tokenMakerWorld: '' // tu sesión de MakerWorld (opcional, se pega desde la calculadora en la PC); nunca sale de este archivo
+  token: ''
 };
 fs.mkdirSync(DATA_DIR, { recursive: true });
 function conf() {
@@ -373,7 +372,9 @@ async function leerMakerWorld(raw) {
 }
 
 /* ---------- «Imprimirla»: se abre la publicación en la PC y se espera la descarga ----------
-   MakerWorld pide iniciar sesión para bajar el archivo: la descarga la hace el navegador de la PC (donde ya estás logueado).
+   MakerWorld pide iniciar sesión para bajar el archivo y además frena a los programas con una verificación anti-robots
+   (la API contesta 418 «We need to confirm that you are not a robot»): por eso la descarga la hace una persona, con el
+   navegador de la PC donde ya está logueada. No se intenta bajarlo desde acá ni guardar tu sesión.
    Acá se vigila la carpeta de Descargas; cuando llega el archivo se guarda en la carpeta de impresión (descomprimido),
    se calcula el costo exacto con Orca y el original pasa a la Papelera, como hace tu vigilante de zips. */
 const EXT_DESCARGA = ['.zip', '.3mf', '.stl', '.obj', '.step', '.stp', '.7z', '.rar'];
@@ -408,67 +409,6 @@ function empezarEspera(p) {
   if (!process.env.CALC3D_NO_ABRIR) cp.spawn('explorer.exe', [p.url], { detached: true, stdio: 'ignore', windowsHide: false }).unref();
 }
 
-/* ---------- tu sesión de MakerWorld (opcional): baja la pieza sin abrir el navegador ----------
-   El token lo pegás vos desde la calculadora en la PC y queda en config.json. Solo se manda a api.bambulab.com
-   (el archivo firmado se baja sin el token) y nunca se devuelve por ninguna ruta de la API. */
-const API_BAMBU = (process.env.CALC3D_API_BAMBU || 'https://api.bambulab.com').replace(/\/$/, '');
-const UA_NAVEGADOR = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';
-function infoSesion(c) {
-  const t = String(c.tokenMakerWorld || '');
-  if (!t) return { activa: false, vence: null, vencida: false };
-  let vence = null;
-  try { const pl = JSON.parse(Buffer.from(t.split('.')[1], 'base64url').toString('utf8')); if (pl.exp) vence = new Date(pl.exp * 1000).toISOString(); } catch (e) { /* no es un JWT: no se sabe cuándo vence */ }
-  return { activa: true, vence, vencida: !!vence && new Date(vence) < new Date() };
-}
-function guardarToken(token) {
-  let c;
-  try { c = JSON.parse(fs.readFileSync(CONF_FILE, 'utf8').replace(/^﻿/, '')); } catch (e) { throw new Error('No pude leer config.json.'); }
-  c.tokenMakerWorld = token;
-  fs.writeFileSync(CONF_FILE, JSON.stringify(c, null, 2));
-}
-async function bajarConSesion(instId) {
-  const c = conf(), s = infoSesion(c);
-  if (!s.activa) throw new Error('No hay una sesión guardada.');
-  if (s.vencida) throw new Error('Tu sesión de MakerWorld venció el ' + s.vence.slice(0, 10) + '.');
-  const r = await fetch(API_BAMBU + '/v1/design-service/instance/' + encodeURIComponent(instId) + '/f3mf?type=download&fileType=', {
-    headers: { 'Authorization': 'Bearer ' + c.tokenMakerWorld, 'Accept': 'application/json', 'User-Agent': UA_NAVEGADOR },
-    redirect: 'error', signal: AbortSignal.timeout(30000)
-  });
-  let j = {};
-  try { j = await r.json(); } catch (e) { /* sin cuerpo */ }
-  if (r.status === 401 || r.status === 403) throw new Error('MakerWorld no aceptó tu sesión (' + (j.error || 'código ' + r.status) + ').');
-  if (!r.ok || !j.url) throw new Error('MakerWorld no dio el enlace de descarga (código ' + r.status + (j.error ? ': ' + j.error : '') + ').');
-  const u = new URL(j.url);
-  const raro = u.protocol !== 'https:' || /^(localhost|.*\.local|.*\.internal)$/i.test(u.hostname) || /^[\d.]+$/.test(u.hostname) || u.hostname.includes(':');
-  if (raro && !process.env.CALC3D_PRUEBA) throw new Error('El enlace de descarga no es de fiar: lo descarté.');
-  const r2 = await fetch(u, { redirect: 'follow', signal: AbortSignal.timeout(10 * 60 * 1000), headers: { 'User-Agent': UA_NAVEGADOR } });
-  if (!r2.ok) throw new Error('No pude bajar el archivo (código ' + r2.status + ').');
-  if ((Number(r2.headers.get('content-length')) || 0) > MAX_BODY) throw new Error('El archivo pesa más de 300 MB: lo descarté.');
-  const buf = Buffer.from(await r2.arrayBuffer());
-  if (buf.length > MAX_BODY) throw new Error('El archivo pesa más de 300 MB: lo descarté.');
-  let nombre = limpiarNombre(String(j.name || ('makerworld-' + instId)));
-  if (!EXT_OK.includes(path.extname(nombre).toLowerCase())) nombre += '.3mf';
-  return { buf, nombre };
-}
-async function bajarYProcesar(p, instId) {
-  let bajado;
-  try { bajado = await bajarConSesion(instId); }
-  catch (err) {
-    if (pedido !== p) return;
-    // no se pudo con la sesión: se abre la página en la PC y se espera la descarga a mano
-    p.avisos.push('No pude bajarla con tu sesión: ' + err.message + ' Te abrí la página en la PC para bajarla a mano.');
-    return empezarEspera(p);
-  }
-  try {
-    const res = await encolar(() => procesarPieza(bajado.buf, bajado.nombre, Object.assign({}, p.q, { guardar: true, tolerante: true })));
-    if (pedido !== p) return;
-    p.resultado = Object.assign(res, { origen: bajado.nombre });
-    p.estado = 'listo';
-  } catch (err) {
-    if (pedido !== p) return;
-    p.estado = 'error'; p.error = err.message;
-  }
-}
 async function aPapelera(f) {
   if (process.env.CALC3D_PRUEBA) { try { fs.rmSync(f); } catch (e) { /* ya no estaba */ } return; }
   await run('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
@@ -593,7 +533,7 @@ const server = http.createServer(async (req, res) => {
       let procesos = [];
       try { procesos = presetIndex(c).procesos(c.sufijoPerfiles); } catch (e) { /* sin lista */ }
       const est = { orca: fs.existsSync(c.orca), maquina: c.maquina, procesos, procesoPorDefecto: c.procesoPorDefecto, filamentos: c.filamentos,
-        carpeta: { ruta: c.carpetaImprimir, existe: !!(c.carpetaImprimir && fs.existsSync(c.carpetaImprimir)) }, local: esLocal(req), sesion: infoSesion(c) };
+        carpeta: { ruta: c.carpetaImprimir, existe: !!(c.carpetaImprimir && fs.existsSync(c.carpetaImprimir)) }, local: esLocal(req) };
       if (esLocal(req)) est.celular = { activo: !!c.celular, direcciones: c.celular ? direccionesCelular(c) : [] };
       return json(res, 200, est);
     }
@@ -630,30 +570,12 @@ const server = http.createServer(async (req, res) => {
         orient: u.searchParams.get('orient') === '1'
       };
       const p = armarPedido(q, 'https://makerworld.com/models/' + k.id + (k.perfil ? '#profileId-' + k.perfil : ''));
-      if (infoSesion(conf()).activa && k.perfil && u.searchParams.get('navegador') !== '1') {
-        // con tu sesión guardada se baja sola, sin abrir el navegador
-        p.modo = 'sesion'; p.estado = 'procesando';
-        bajarYProcesar(p, k.perfil);
-      } else {
-        empezarEspera(p);
-      }
+      empezarEspera(p);
       return json(res, 200, { ok: true, id: p.id, modo: p.modo, carpetas: p.dirs });
     }
     if (req.method === 'GET' && u.pathname === '/api/imprimir/estado') {
       if (!pedido) return json(res, 200, { ok: true, estado: 'ninguno' });
       return json(res, 200, { ok: true, id: pedido.id, estado: pedido.estado, modo: pedido.modo, url: pedido.url, carpetas: pedido.dirs, avisos: pedido.avisos, resultado: pedido.resultado, error: pedido.error });
-    }
-    if (u.pathname === '/api/sesion') {
-      if (!esLocal(req)) return json(res, 403, { ok: false, error: 'La sesión de MakerWorld solo se maneja desde la PC.' });
-      if (req.method === 'POST') {
-        let t = '';
-        try { t = String(JSON.parse((await body(req)).toString('utf8')).token || ''); } catch (e) { /* cuerpo roto */ }
-        t = t.trim().replace(/^Bearer\s+/i, '').replace(/^["']|["']$/g, '');
-        if (!/^[A-Za-z0-9._~+\/=-]{20,4096}$/.test(t)) return json(res, 400, { ok: false, error: 'Eso no parece un token: tiene que ser una sola línea de letras y números, sin espacios.' });
-        guardarToken(t);
-        return json(res, 200, { ok: true, sesion: infoSesion(conf()) });
-      }
-      if (req.method === 'DELETE') { guardarToken(''); return json(res, 200, { ok: true, sesion: infoSesion(conf()) }); }
     }
     if (req.method === 'POST' && u.pathname === '/api/imprimir/cancelar') {
       clearInterval(timerPedido); pedido = null;
