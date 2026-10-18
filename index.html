@@ -2,162 +2,225 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
-<meta name="theme-color" content="#090b0e">
+<meta name="theme-color" content="#0a0d12">
+<meta name="description" content="Calculadora de costos de impresión 3D en pesos argentinos, con seguimiento de costos y ganancias.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&display=swap">
 <title>Calculadora 3D</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23090b0e'/%3E%3Crect x='5' y='6' width='22' height='4' rx='1' fill='%232f7bff'/%3E%3Crect x='7' y='10' width='3' height='15' fill='%23566275'/%3E%3Crect x='22' y='10' width='3' height='15' fill='%23566275'/%3E%3Crect x='13' y='13' width='6' height='7' rx='1' fill='%232f7bff'/%3E%3Crect x='4' y='25' width='24' height='3' rx='1' fill='%232f7bff'/%3E%3C/svg%3E">
 <style>
-:root{color-scheme:dark;--bg:#090b0e;--card:#12161c;--ink:#e9edf3;--mute:#8a94a3;--line:#252c36;--acc:#2f7bff;--acc-ink:#fff;--soft:#0f2142;--c1:#2f7bff;--c2:#ffa62b;--c3:#22d3ee;--c4:#9b8cff;--c5:#6b7480;--pos:#4ade80;--neg:#ff6b6b}
+/* Calculadora 3D · sistema visual
+   Superficies por tono (sin bordes finos ni sombras), un solo acento azul, Geist, números tabulares. */
+:root{
+  color-scheme:dark;
+  --font:"Geist","Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif;
+  --bg:#0a0d12; --s1:#10151c; --s2:#161d27; --s3:#1e2733; --s4:#283444; --field:#0b1017; --line:#2a3544;
+  --ink:#eef2f8; --mute:#9eaabc; --faint:#6f7c90;
+  --acc:#2f6fe0; --acc-hi:#8ab4ff; --acc-deep:#0d2a60;
+  --pos:#5fd68a; --neg:#ff8080; --warn:#f0b24a;
+  --c1:#4a86e8; --c2:#9cc2ff; --c3:#667690; --c4:#d3dbe8; --c5:#8391a8;
+  --r-sm:6px; --r-md:12px;
+  --ease:cubic-bezier(.32,.72,0,1);
+}
 *{box-sizing:border-box}
-body{margin:0;background:radial-gradient(1100px 460px at 50% -160px,#10306a66,transparent),var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
-.wrap{max-width:1080px;margin:0 auto;padding:24px 16px 64px}
-/* perfiles de aluminio de la estructura, a los costados */
-body::before,body::after{content:"";position:fixed;top:0;bottom:0;width:12px;display:none;
-  background:linear-gradient(var(--acc),var(--acc)) top/100% 16px no-repeat,repeating-linear-gradient(180deg,#171c23 0 6px,#0c0f13 6px 8px);
-  border-left:1px solid var(--line);border-right:1px solid var(--line)}
-body::before{left:16px}body::after{right:16px}
-@media(min-width:1240px){body::before,body::after{display:block}}
-.hero{display:flex;align-items:center;gap:22px;margin:6px 0 24px}
-.hero svg{width:112px;height:auto;flex:none;filter:drop-shadow(0 0 16px #2f7bff55)}
-@media(max-width:600px){.hero{gap:14px}.hero svg{width:64px}}
-.hero h1{font-size:30px;margin:0;letter-spacing:.04em;text-transform:uppercase;font-weight:800;font-style:italic;line-height:1.1}
-.hero h1 b{color:var(--acc)}
-.badge{display:inline-block;background:var(--acc);color:#fff;font-weight:700;font-style:italic;font-size:12px;padding:2px 8px;border-radius:4px;letter-spacing:.08em;vertical-align:middle;margin-left:10px}
-.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-.chips span{border:1px solid var(--line);border-radius:999px;padding:2px 11px;font-size:12px;color:var(--mute);background:#0d1117}
-.chips span.est::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:7px;background:var(--c5)}
-.chips span.est.ok::before{background:var(--pos)}
-.chips span.est.warn::before{background:var(--c2)}
-.screen{border:2px solid var(--acc)!important;background:linear-gradient(180deg,#0b1730,#0a0e14 55%)!important;box-shadow:0 0 0 5px #0a0d12,0 0 34px #2f7bff33}
-.grid{display:grid;grid-template-columns:1fr 360px;gap:20px;align-items:start}
-@media(max-width:860px){.grid{grid-template-columns:1fr}}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
-.card h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--mute);margin:0 0 14px;font-weight:600}
-.card h2::before{content:"";display:inline-block;width:8px;height:8px;background:var(--acc);margin-right:9px;border-radius:2px;vertical-align:1px}
-.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;align-items:end}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--font);font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+.wrap{max-width:1100px;margin:0 auto;padding:32px 20px 72px}
+.skip{position:absolute;left:12px;top:-60px;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:var(--r-sm);z-index:60;font-weight:600;text-decoration:none}
+.skip:focus{top:12px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* encabezado */
+.hero{display:flex;align-items:center;gap:32px;margin:0 0 36px}
+.hero svg{width:132px;height:auto;flex:none}
+.hero h1{font-size:clamp(34px,5.2vw,58px);line-height:.96;letter-spacing:-.035em;font-weight:800;margin:0 0 12px;text-wrap:balance}
+.hero h1 b{color:var(--acc-hi);font-weight:800}
+.sub{margin:0;color:var(--mute);font-size:15px;max-width:58ch;text-wrap:pretty}
+.est{margin:12px 0 0;font-size:13px;color:var(--mute);display:flex;align-items:center;gap:8px}
+.est::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--faint);flex:none}
+.est.ok::before{background:var(--pos)}
+.est.warn::before{background:var(--warn)}
+
+/* estructura */
+.grid{display:grid;grid-template-columns:1fr 380px;gap:24px;align-items:start}
+.card{background:var(--s1);border-radius:var(--r-md);padding:24px;margin-bottom:20px}
+.card h2{font-size:18px;font-weight:600;letter-spacing:-.015em;color:var(--ink);margin:0 0 18px}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;align-items:end}
+label{display:block;font-size:13px;color:var(--mute)}
+label>span.t{display:block;margin-bottom:6px;line-height:1.25}
+.f{position:relative}
+.hint{font-size:13px;color:var(--mute);margin:12px 0 0;max-width:64ch;text-wrap:pretty}
+.mute{color:var(--mute);font-size:13px}
+.lbl{font-size:13px;color:var(--mute)}
+
+/* campos */
+input,select{width:100%;min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--field);color:var(--ink);font:inherit;font-variant-numeric:tabular-nums;transition-property:border-color,background-color;transition-duration:.15s;transition-timing-function:var(--ease)}
+input::placeholder{color:var(--faint)}
+input:hover,select:hover{border-color:#3a495e}
+input:focus-visible,select:focus-visible{outline:2px solid var(--acc-hi);outline-offset:1px;border-color:var(--acc-hi)}
+select{appearance:none;-webkit-appearance:none;padding-right:36px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%239eaabc' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center}
 input[type=number]{-moz-appearance:textfield;appearance:textfield}
 input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
-label{display:block;font-size:13px;color:var(--mute)}
-label>span.t{display:block;margin-bottom:4px}
-.f{position:relative}
-input,select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--ink);font:inherit}
-input[type=checkbox]{width:auto;accent-color:var(--acc)}
-input:focus,select:focus{outline:2px solid var(--acc);outline-offset:-1px;border-color:transparent}
-.f .u{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--mute);font-size:12px;pointer-events:none}
-.f input.hasu{padding-right:42px}
-.hint{font-size:12px;color:var(--mute);margin:8px 0 0}
-.drop{border:1.5px dashed var(--line);border-radius:12px;padding:18px 16px;text-align:center;color:var(--mute);cursor:pointer;margin-bottom:12px;transition:.15s}
-.drop:hover,.drop.over{border-color:var(--acc);background:var(--soft);color:var(--ink)}
-.drop b{color:var(--ink)}
-.drop small{display:block;margin-top:4px;font-size:12px}
-.estado{font-size:13px;border-radius:10px;padding:9px 12px;margin:0 0 14px;background:var(--bg);border:1px solid var(--line);color:var(--mute)}
-.estado.info{border-color:var(--acc);color:var(--ink)}
-.estado.ok{border-color:#1f6f43;color:var(--ink)}
-.estado.warn{border-color:#8a5a12;color:var(--ink)}
-.estado.err{border-color:#8a2b2b;color:var(--ink)}
-.estado b{color:var(--ink)}
-.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:14px}
-.seg button{border:0;border-radius:0;background:transparent;padding:8px 20px;color:var(--mute)}
+input[type=checkbox]{width:18px;height:18px;min-height:0;accent-color:var(--acc);padding:0}
+.f .u{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--faint);font-size:12.5px;pointer-events:none}
+.f input.hasu{padding-right:44px}
+.chk{display:flex;align-items:center;gap:10px;min-height:44px;color:var(--ink);font-size:14px;cursor:pointer}
+
+/* botones */
+button{font:inherit;min-height:44px;padding:0 18px;border-radius:var(--r-sm);border:0;background:var(--s3);color:var(--ink);cursor:pointer;font-weight:500;
+  transition-property:background-color,transform,color;transition-duration:.15s;transition-timing-function:var(--ease)}
+button:hover{background:var(--s4)}
+button:active{transform:translateY(1px) scale(.985)}
+button:focus-visible{outline:2px solid var(--acc-hi);outline-offset:2px}
+button.on,button.pri{background:var(--acc);color:#fff;font-weight:600}
+button.on:hover,button.pri:hover{background:#3d7df0}
+button.link{background:none;min-height:0;padding:2px 0;color:var(--acc-hi);font-weight:500;text-decoration:underline;text-underline-offset:3px}
+button.link:hover{background:none;color:#b6d0ff}
+.pills{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.pills button{padding:0 6px;white-space:nowrap;min-width:0}
+.seg{display:inline-flex;background:var(--field);border-radius:8px;padding:4px;gap:4px;margin-bottom:18px}
+.seg button{min-height:40px;padding:0 22px;background:transparent;color:var(--mute)}
+.seg button:hover{background:var(--s2);color:var(--ink)}
 .seg button.on{background:var(--acc);color:#fff}
-.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:14px;align-items:end}
-.chk{display:flex;align-items:center;gap:8px;padding-bottom:9px}
-.pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
-.pills button{flex:1;min-width:64px}
-button{font:inherit;padding:9px 14px;border-radius:9px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
-button:hover{border-color:var(--acc)}
-button.on,button.pri{background:var(--acc);color:var(--acc-ink);border-color:var(--acc);font-weight:600}
-button.link{border:0;background:none;color:var(--mute);padding:4px 0;text-decoration:underline;font-size:13px}
-.res{position:sticky;top:16px}
-@media(max-width:860px){.res{position:static}}
-.big{font-size:40px;font-weight:700;letter-spacing:-.02em;line-height:1.1;margin:2px 0}
-.lbl{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute)}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
-.two div b{display:block;font-size:19px}
-.bar{display:flex;height:10px;border-radius:6px;overflow:hidden;background:var(--line);margin:14px 0 10px}
-.bar i{display:block;height:100%}
-.line{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:14px}
-.line .dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:8px}
-.line em{font-style:normal;color:var(--mute);font-size:12px;margin-left:6px}
-.line.tot{border-top:1px solid var(--line);margin-top:6px;padding-top:10px;font-weight:700}
-.mute{color:var(--mute);font-size:13px}
-.acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
 .acts button{flex:1}
 .acts.left{justify-content:flex-start}
 .acts.left button{flex:0 0 auto}
+
+/* subir pieza */
+.drop{display:block;width:100%;min-height:0;background:var(--field);border:1.5px dashed #3a4a63;border-radius:8px;padding:24px 18px;text-align:center;color:var(--mute);margin-bottom:14px;font-weight:400}
+.drop:hover{background:#0e1a30;border-color:var(--acc-hi);color:var(--ink)}
+.drop b{display:block;color:var(--ink);font-size:16px;font-weight:600;margin-bottom:2px}
+.drop small{display:block;margin-top:6px;font-size:13px;color:var(--faint)}
+.drop.over{background:#0e1a30;border-color:var(--acc-hi)}
+.estado{font-size:14px;border-radius:var(--r-sm);padding:12px 14px;margin:0 0 16px;background:var(--s2);border-left:3px solid var(--faint);color:var(--mute);line-height:1.5}
+.estado.info{border-left-color:var(--acc-hi);color:var(--ink)}
+.estado.ok{border-left-color:var(--pos);color:var(--ink)}
+.estado.warn{border-left-color:var(--warn);color:var(--ink)}
+.estado.err{border-left-color:var(--neg);color:var(--ink)}
+.estado b{font-weight:600}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:16px;align-items:end}
+
+/* resultado: un campo de color completo */
+.res{position:sticky;top:20px}
+.screen{background:var(--acc-deep)!important;color:#fff;margin-bottom:0}
+.screen .lbl,.screen .mute{color:#b9c9e8}
+.big{font-size:clamp(46px,6vw,60px);font-weight:700;letter-spacing:-.04em;line-height:1;margin:6px 0 4px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:22px 0}
+.two div b{display:block;font-size:22px;letter-spacing:-.02em;font-weight:650;margin-top:2px}
+.bar{display:flex;height:8px;border-radius:4px;overflow:hidden;background:rgba(255,255,255,.12);margin:4px 0 14px;gap:2px}
+.bar i{display:block;height:100%}
+.line{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:6px 0;font-size:14.5px}
+.line>span:first-child{flex:1;min-width:0}
+.line>span:last-child{white-space:nowrap}
+.line .dot{width:9px;height:9px;border-radius:2px;display:inline-block;margin-right:10px}
+.line em{font-style:normal;color:#b9c9e8;font-size:12.5px;margin-left:8px}
+.line.tot{margin-top:12px;padding-top:14px;font-weight:650;font-size:16px}
+.screen .acts button{background:rgba(255,255,255,.12);color:#fff}
+.screen .acts button:hover{background:rgba(255,255,255,.2)}
+.screen .acts button.pri{background:#fff;color:#0a1a3a}
+.screen .acts button.pri:hover{background:#e7efff}
 .pos{color:var(--pos)}.neg{color:var(--neg)}
+.screen .pos{color:#7ee6a3}
+
 /* seguimiento */
-.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
-.tile{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
-.tile b{display:block;font-size:21px;letter-spacing:-.01em}
-.tile small{color:var(--mute);font-size:12px}
-.tile.main{border-color:var(--acc);background:#0b1b3a}
-.filtros{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 4px}
-.filtros button{padding:6px 14px;font-size:13px}
-.tbl-wrap{overflow-x:auto;margin-bottom:18px}
-.tbl{width:100%;border-collapse:collapse;font-size:14px;min-width:520px}
-.tbl th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--mute);text-align:right;padding:6px;border-bottom:1px solid var(--line);font-weight:600}
-.tbl td{padding:8px 6px;text-align:right;border-bottom:1px solid var(--line)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:12px;margin-bottom:28px}
+.tile{background:var(--s2);border-radius:10px;padding:16px 18px}
+.tile b{display:block;font-size:24px;letter-spacing:-.025em;font-weight:650;margin:2px 0}
+.tile small{color:var(--faint);font-size:12.5px}
+.tile.main{background:var(--acc-deep)}
+.tile.main .lbl{color:#b9c9e8}
+.sub-h{font-size:14px;font-weight:600;color:var(--ink);margin:0 0 10px}
+.filtros{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}
+.filtros button{min-height:38px;padding:0 16px;font-size:14px}
+.tbl-wrap{overflow-x:auto;margin-bottom:30px;border-radius:10px}
+.tbl{width:100%;border-collapse:collapse;font-size:14.5px;min-width:480px}
+.tbl th{font-size:13px;color:var(--mute);text-align:right;padding:10px 14px;font-weight:500;background:var(--s2)}
+.tbl td{padding:12px 14px;text-align:right}
+.tbl tr:nth-child(even) td{background:var(--s2)}
 .tbl th:first-child,.tbl td:first-child{text-align:left}
-.reg{border-top:1px solid var(--line);padding:12px 0}
-.reg:first-child{border-top:0}
-.reg-top{display:flex;align-items:center;gap:10px}
+.tbl td:first-child{white-space:nowrap}
+.reg{background:var(--s2);border-radius:10px;padding:16px 18px;margin-bottom:10px}
+.reg-top{display:flex;align-items:center;gap:12px}
 .reg-nombre{flex:1;min-width:0}
-.reg-nombre b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.reg-nombre small{color:var(--mute);font-size:12px}
-.tipo{padding:3px 11px;border-radius:999px;font-size:12px;font-weight:700;border:1px solid;white-space:nowrap}
-.tipo.venta{background:var(--acc);border-color:var(--acc);color:#fff}
-.tipo.personal{background:transparent;border-color:var(--c2);color:var(--c2)}
-.reg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:10px;margin-top:8px;align-items:end}
-.reg-grid b{display:block;font-size:15px}
-.reg-grid input{padding:6px 8px}
-.reg button{padding:6px 12px;font-size:13px}
-details{color:var(--mute);font-size:14px}
-details summary{cursor:pointer;color:var(--ink);font-weight:600}
-.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:9px;opacity:0;transition:.2s;pointer-events:none;z-index:9}
-.toast.show{opacity:1}
+.reg-nombre b{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;font-weight:600;overflow-wrap:anywhere}
+.reg-nombre small{color:var(--mute);font-size:13px}
+.tipo{min-height:30px;padding:0 12px;border-radius:5px;font-size:13px;font-weight:600;white-space:nowrap}
+.tipo.venta{background:var(--acc);color:#fff}
+.tipo.venta:hover{background:#3d7df0}
+.tipo.personal{background:var(--s4);color:var(--ink)}
+.reg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-top:14px;align-items:end}
+.reg-grid b{display:block;font-size:16px;font-weight:600}
+.reg-grid input{min-height:40px}
+.reg button{min-height:36px;padding:0 14px;font-size:14px}
+details{color:var(--mute);font-size:14.5px;max-width:78ch}
+details summary{cursor:pointer;color:var(--ink);font-weight:600;padding:6px 0}
+details summary:focus-visible{outline:2px solid var(--acc-hi);outline-offset:3px;border-radius:4px}
+details p{text-wrap:pretty}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(8px);background:var(--ink);color:var(--bg);padding:11px 18px;border-radius:var(--r-sm);font-weight:500;opacity:0;transition-property:opacity,transform;transition-duration:.25s;transition-timing-function:var(--ease);pointer-events:none;z-index:40}
+.toast.show{opacity:1;transform:translateX(-50%)}
 [hidden]{display:none!important}
 #quote{display:none}
-/* barra de precio fija (solo celular y tablet) */
+
+/* movimiento: entrada de las piezas y cambio de cifras */
+@keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes tick{from{opacity:.45;transform:translateY(5px)}to{opacity:1;transform:none}}
+.hero{animation:rise .8s var(--ease) backwards}
+.c-pieza{animation:rise .8s var(--ease) .08s backwards}
+.res{animation:rise .8s var(--ease) .16s backwards}
+.c-precios{animation:rise .8s var(--ease) .24s backwards}
+#cardTrabajo{animation:rise .8s var(--ease) .3s backwards}
+#cardGanancia{animation:rise .8s var(--ease) .36s backwards}
+.tick{animation:tick .4s var(--ease)}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition-duration:.01ms!important}
+}
+
+/* barra de precio fija (celular y tablet) */
 .mbar{display:none}
-@media(max-width:860px){
-  .grid{gap:0}
+@media(max-width:900px){
+  .grid{display:flex;flex-direction:column}
   .colL{display:contents}
-  .c-pieza{order:1}.res{order:2}.c-precios{order:3}#cardTrabajo{order:4}#cardGanancia{order:5}
-  .wrap{padding-bottom:104px}
-  .toast{bottom:92px}
-  .mbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:20;align-items:center;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));
-    background:rgba(9,14,24,.94);border-top:2px solid var(--acc);transition:transform .2s}
+  .c-pieza{order:1}.res{order:2;position:static}.c-precios{order:3}#cardTrabajo{order:4}#cardGanancia{order:5}
+  .wrap{padding-bottom:112px}
+  .toast{bottom:96px}
+  .mbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:30;align-items:center;gap:8px;padding:12px 14px calc(12px + env(safe-area-inset-bottom));background:var(--acc-deep);transition:transform .3s var(--ease)}
   .mbar.off{transform:translateY(115%)}
   .mb-txt{flex:1;min-width:0}
-  .mb-txt b{display:block;font-size:22px;line-height:1.1;letter-spacing:-.01em}
-  .mbar button{padding:10px 14px;white-space:nowrap}
+  .mb-txt .lbl{color:#b9c9e8;font-size:12.5px}
+  .mb-txt b{display:block;font-size:24px;line-height:1.1;letter-spacing:-.03em}
+  .mbar button{padding:0 16px;white-space:nowrap;background:rgba(255,255,255,.14);color:#fff}
+  .mbar button.pri{background:#fff;color:#0a1a3a}
 }
+@media(max-width:700px){.pills{grid-template-columns:1fr 1fr}}
 @media(max-width:600px){
-  .wrap{padding:14px 12px 104px}
-  .hero{margin:2px 0 16px}
-  .hero h1{font-size:23px}
-  .badge{margin-left:6px;font-size:11px}
-  .card{padding:14px;border-radius:12px;margin-bottom:12px}
-  .row,.opts{grid-template-columns:1fr 1fr;gap:10px}
+  .wrap{padding:20px 14px 112px}
+  .hero{gap:16px;margin-bottom:24px}
+  .hero svg{width:76px}
+  .hero h1{font-size:34px}
+  .card{padding:18px;border-radius:10px;margin-bottom:14px}
+  .row,.opts{grid-template-columns:1fr 1fr;gap:12px}
   #lProceso{grid-column:1/-1}
-  input,select{font-size:16px;padding:10px}
+  input,select{font-size:16px}
   .seg{display:flex;width:100%}
-  .seg button{flex:1;padding:10px 8px}
-  .drop{padding:16px 12px}
-  .big{font-size:36px}
-  .tiles{grid-template-columns:1fr 1fr;gap:8px}
-  .tile{padding:10px 12px}
+  .seg button{flex:1;padding:0 8px}
+  .drop{padding:20px 14px}
+  .tiles{grid-template-columns:1fr 1fr;gap:10px}
+  .tile{padding:14px}
   .tile.main{grid-column:1/-1}
-  .tile b{font-size:18px}
-  .tbl{min-width:0;font-size:12.5px}
-  .tbl th{font-size:10px;padding:6px 3px;letter-spacing:.02em}
-  .tbl td{padding:8px 3px}
-  .reg-grid{grid-template-columns:1fr 1fr;gap:10px}
+  .tile b{font-size:20px}
+  .tbl{min-width:0;font-size:13px}
+  .tbl th{font-size:11.5px;padding:8px 6px}
+  .tbl td{padding:10px 6px}
+  .reg{padding:14px}
+  .reg-grid{grid-template-columns:1fr 1fr}
   .reg-nombre small{display:block}
   .acts button,.acts.left button{flex:1 1 100%}
-  .screen{box-shadow:0 0 0 3px #0a0d12,0 0 24px #2f7bff33}
 }
+
 @media print{
   body>*:not(#quote){display:none!important}
   #quote{display:block!important;color:#000;background:#fff;font:15px/1.5 system-ui,sans-serif;padding:20px}
@@ -171,6 +234,7 @@ details summary{cursor:pointer;color:var(--ink);font-weight:600}
 </style>
 </head>
 <body>
+<a class="skip" href="#resultado">Ir al resultado</a>
 <main class="wrap">
   <header class="hero">
     <svg viewBox="0 0 200 240" aria-hidden="true" role="img">
@@ -193,8 +257,9 @@ details summary{cursor:pointer;color:var(--ink);font-weight:600}
       <rect x="22" y="224" width="22" height="8" rx="2" fill="#2f7bff"/><rect x="156" y="224" width="22" height="8" rx="2" fill="#2f7bff"/>
     </svg>
     <div>
-      <h1>Calculadora <b>3D</b><span class="badge">GENIUS PRO</span></h1>
-      <div class="chips"><span>Artillery Genius Pro</span><span>220 × 220 × 250 mm</span><span>PLA 1,75 mm · boquilla 0,4</span><span>Pesos argentinos</span><span class="est" id="chipOrca">Conectando…</span></div>
+      <h1>Calculadora <b>3D</b></h1>
+      <p class="sub">Artillery Genius Pro · cama de 220 × 220 × 250 mm · PLA 1,75 mm con boquilla de 0,4 · todo en pesos argentinos</p>
+      <p class="est" id="chipOrca" role="status">Conectando…</p>
     </div>
   </header>
 
@@ -202,12 +267,12 @@ details summary{cursor:pointer;color:var(--ink);font-weight:600}
     <div class="colL">
       <section class="card c-pieza">
         <h2>Pieza</h2>
-        <div class="seg" id="tipoSeg"><button data-t="venta">Para venta</button><button data-t="personal">Para mí</button></div>
-        <div class="drop" id="drop">
-          <div id="dropTxt"><b>Arrastrá el archivo de la pieza</b> y calculo el costo solo<small>.stl · .3mf · .obj · .step · o el .gcode ya laminado (o tocá para elegirlo)</small></div>
-          <input type="file" id="file" accept=".stl,.3mf,.obj,.step,.stp,.gcode,.gco,.g,.txt" hidden>
-        </div>
-        <div class="estado" id="estado" hidden></div>
+        <div class="seg" id="tipoSeg" role="group" aria-label="Para qué es la pieza"><button type="button" data-t="venta">Para venta</button><button type="button" data-t="personal">Para mí</button></div>
+        <button type="button" class="drop" id="drop" aria-describedby="estado">
+          <span id="dropTxt"><b>Arrastrá el archivo de la pieza</b>y calculo el costo solo<small>.stl · .3mf · .obj · .step · o el .gcode ya laminado (o tocá para elegirlo)</small></span>
+        </button>
+        <input type="file" id="file" accept=".stl,.3mf,.obj,.step,.stp,.gcode,.gco,.g,.txt" hidden aria-label="Elegir el archivo de la pieza">
+        <div class="estado" id="estado" role="status" aria-live="polite" hidden></div>
         <div class="opts" id="opts">
           <label id="lProceso"><span class="t">Perfil de laminado</span><select id="proceso"></select></label>
           <label id="lSoportes"><span class="t">Soportes</span><select id="soportes"><option value="perfil">Según el perfil</option><option value="si">Con soportes</option><option value="no">Sin soportes</option></select></label>
@@ -252,11 +317,11 @@ details summary{cursor:pointer;color:var(--ink);font-weight:600}
 
       <section class="card" id="cardGanancia">
         <h2>Ganancia</h2>
-        <div class="pills" id="pills">
-          <button data-m="2">x2 · Mayorista</button>
-          <button data-m="3">x3 · Media</button>
-          <button data-m="4">x4 · Estándar</button>
-          <button data-m="5">x5 · Minorista</button>
+        <div class="pills" id="pills" role="group" aria-label="Multiplicador de ganancia">
+          <button type="button" data-m="2">x2 · Mayorista</button>
+          <button type="button" data-m="3">x3 · Media</button>
+          <button type="button" data-m="4">x4 · Estándar</button>
+          <button type="button" data-m="5">x5 · Minorista</button>
         </div>
         <div class="row">
           <label><span class="t">Multiplicador del costo</span><input id="margen" type="number" step="any" min="1"></label>
@@ -266,7 +331,7 @@ details summary{cursor:pointer;color:var(--ink);font-weight:600}
       </section>
     </div>
 
-    <aside class="res">
+    <aside class="res" id="resultado" aria-label="Resultado">
       <section class="card screen">
         <div class="lbl" id="lblPrincipal">Precio de venta por pieza</div>
         <div class="big" id="vVenta">$ 0</div>
@@ -300,10 +365,10 @@ details summary{cursor:pointer;color:var(--ink);font-weight:600}
   <section class="card" id="seguimiento">
     <h2>Seguimiento de costos y ganancias</h2>
     <div class="tiles" id="tiles"></div>
-    <div class="lbl" style="margin-bottom:6px">Por mes</div>
+    <h3 class="sub-h">Por mes</h3>
     <div class="tbl-wrap"><table class="tbl" id="meses"></table></div>
-    <div class="lbl">Piezas y proyectos</div>
-    <div class="filtros" id="filtros">
+    <h3 class="sub-h">Piezas y proyectos</h3>
+    <div class="filtros" id="filtros" role="group" aria-label="Filtrar piezas">
       <button data-f="todas">Todas</button><button data-f="venta">Para venta</button><button data-f="personal">Para mí</button>
     </div>
     <div id="lista"></div>
@@ -336,7 +401,7 @@ details summary{cursor:pointer;color:var(--ink);font-weight:600}
   <button class="pri" id="mbGuardar">Guardar</button>
 </div>
 <div id="quote"></div>
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
 const $ = id => document.getElementById(id);
@@ -392,6 +457,13 @@ async function cargarDatos(){
 }
 
 /* ---------- cálculo ---------- */
+// cuando cambia la cifra principal, se asienta con un movimiento corto (solo transform y opacity)
+function cifra(id, texto){
+  const e = $(id);
+  if(e.textContent === texto) return;
+  e.textContent = texto;
+  e.classList.remove('tick'); void e.offsetWidth; e.classList.add('tick');
+}
 function calc(){
   const m = MAT[val('mat')] || MAT.PLA;
   const personal = S.tipo === 'personal';
@@ -417,8 +489,8 @@ function calc(){
   const saleTot = precio*qty, gan = saleTot-costoV;
 
   $('lblPrincipal').textContent = personal ? 'Lo que cuesta hacerla · por pieza' : 'Precio de venta por pieza';
-  $('vVenta').textContent = money(personal ? unit : precio);
-  $('mbVal').textContent = money(personal ? unit : precio);
+  cifra('vVenta', money(personal ? unit : precio));
+  cifra('mbVal', money(personal ? unit : precio));
   $('mbLbl').textContent = personal ? 'Cuesta hacerla · c/u' : 'Precio de venta · c/u';
   $('vUnit').textContent = money(costoV/qty);
   $('vGan').textContent = money(gan);
@@ -429,10 +501,10 @@ function calc(){
   $('vReal').textContent = !personal && saleTot>0 ? 'Ganancia real: ' + Math.round(gan/saleTot*100) + ' % de la venta' : '';
   $('bar').innerHTML = parts.map(p => total>0 && p.v>0 ? '<i style="width:'+(p.v/total*100)+'%;background:var('+p.c+')"></i>' : '').join('');
   $('lines').innerHTML = parts.map(p => '<div class="line"><span><span class="dot" style="background:var('+p.c+')"></span>'+p.k+(total>0&&p.v>0?'<em>'+Math.round(p.v/total*100)+' %</em>':'')+'</span><span>'+money(p.v)+'</span></div>').join('');
-  document.querySelectorAll('#pills button').forEach(b => b.classList.toggle('on', parseFloat(b.dataset.m) === num('margen')));
+  document.querySelectorAll('#pills button').forEach(b => { const on = parseFloat(b.dataset.m) === num('margen'); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
   $('bloqueVenta').hidden = personal; $('bloquePersonal').hidden = !personal;
   $('cardTrabajo').hidden = personal; $('cardGanancia').hidden = personal; $('actsCliente').hidden = personal;
-  document.querySelectorAll('#tipoSeg button').forEach(b => b.classList.toggle('on', b.dataset.t === S.tipo));
+  document.querySelectorAll('#tipoSeg button').forEach(b => { const on = b.dataset.t === S.tipo; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
 
   last = {nombre:val('nombre').trim() || 'Pieza sin nombre', tipo:S.tipo, mat:val('mat'), g, h:num('horas'), mi:num('minutos'), qty, costoV, costoP, total, unit, precio, saleTot, gan};
   persistSoon();
@@ -602,7 +674,7 @@ function renderSeg(){
       }).join('')
     : '<tr><td style="text-align:left;color:var(--mute)">Todavía no hay nada guardado. Cuando calcules una pieza, tocá «Guardar en el seguimiento».</td></tr>';
 
-  document.querySelectorAll('#filtros button').forEach(b => b.classList.toggle('on', b.dataset.f === S.filtro));
+  document.querySelectorAll('#filtros button').forEach(b => { const on = b.dataset.f === S.filtro; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
   const vis = S.registro.filter(e => S.filtro === 'todas' || e.tipo === S.filtro);
   $('lista').innerHTML = vis.length ? vis.map(e => {
     const meta = fechaCorta(e.fecha)+' · '+e.mat+' · '+(Math.round(e.g*10)/10)+' g · '+dur(e.h,e.mi)+' · '+e.qty+' u.';
