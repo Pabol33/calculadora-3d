@@ -210,7 +210,8 @@ async function extraerZip(archivo, exDir) {
   const r = await run('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', SCRIPT_ZIP], 10 * 60 * 1000,
     { env: Object.assign({}, process.env, { ZSRC: archivo, ZDEST: exDir, ZMAX: String(MAX_EXTRAIDO) }) });
   if (/EXPANDE_DEMASIADO/.test(r.out)) throw new Error('El comprimido se expande a más de 2 GB: lo descarté por seguridad.');
-  if (r.code !== 0) throw new Error('No pude descomprimir el zip (' + r.out.trim().slice(-160) + ').');
+  if (/InvalidDataException|End of Central Directory|central directory/i.test(r.out)) throw new Error('El zip está dañado o incompleto.');
+  if (r.code !== 0) throw new Error('No pude descomprimir el zip (' + r.out.replace(/\s+/g, ' ').trim().slice(-160) + ').');
 }
 async function extraer(archivoComprimido, exDir) {
   fs.mkdirSync(exDir, { recursive: true });
@@ -345,7 +346,9 @@ async function leerMakerWorld(raw) {
   const d = j.d;
   const perfiles = (d.instances || []).map(i => {
     const fil = i.instanceFilaments || [];
+    const ps = i.extention && i.extention.modelInfo && i.extention.modelInfo.projectSettings || {};
     return {
+      capa: ps.layerHeight || '', paredes: ps.wallLoops || '', relleno: ps.sparseInfillDensity || '',
       id: i.id, perfilId: i.profileId, titulo: i.title || ('Perfil ' + i.id),
       g: Number(i.weight) || 0, secs: Number(i.prediction) || 0,
       ams: !!i.needAms, colores: Number(i.materialCnt) || fil.length || 1,
@@ -360,6 +363,73 @@ async function leerMakerWorld(raw) {
     portada: d.coverUrl || '', licencia: d.license || '', url: 'https://makerworld.com/models/' + k.id,
     perfilPedido: k.perfil, perfilPorDefecto: d.defaultInstanceId || null, perfiles
   };
+}
+
+/* ---------- «Imprimirla»: se abre la publicación en la PC y se espera la descarga ----------
+   MakerWorld pide iniciar sesión para bajar el archivo: la descarga la hace el navegador de la PC (donde ya estás logueado).
+   Acá se vigila la carpeta de Descargas; cuando llega el archivo se guarda en la carpeta de impresión (descomprimido),
+   se calcula el costo exacto con Orca y el original pasa a la Papelera, como hace tu vigilante de zips. */
+const EXT_DESCARGA = ['.zip', '.3mf', '.stl', '.obj', '.step', '.stp', '.7z', '.rar'];
+function carpetasDescarga(c) {
+  if (process.env.CALC3D_DESCARGAS) return process.env.CALC3D_DESCARGAS.split(';').filter(Boolean);
+  if (Array.isArray(c.carpetasDescarga) && c.carpetasDescarga.length) return c.carpetasDescarga.filter(p => fs.existsSync(p));
+  const out = [];
+  try {
+    // la carpeta Descargas real de Windows (puede estar movida a otro disco)
+    const r = cp.spawnSync('reg', ['query', 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders', '/v', '{374DE290-123F-4565-9164-39C4925E467B}'], { encoding: 'utf8', windowsHide: true });
+    const m = (r.stdout || '').match(/REG_(?:EXPAND_)?SZ\s+(.+?)\s*$/m);
+    if (m) {
+      let p = m[1].trim().replace(/%([^%]+)%/g, (_, v) => process.env[v] || '');
+      if (/^[A-Za-z]:$/.test(p)) p += '\\';
+      out.push(p);
+    }
+  } catch (e) { /* se usa la de siempre */ }
+  out.push(path.join(os.homedir(), 'Downloads'));
+  return [...new Set(out)].filter(p => fs.existsSync(p));
+}
+let pedido = null, timerPedido = null;
+function armarPedido(q, url) {
+  clearInterval(timerPedido);
+  pedido = { id: Date.now(), url, q, desde: Date.now(), estado: 'esperando', dirs: carpetasDescarga(conf()), vistos: new Map(), ignorados: new Set(), resultado: null, error: null, avisos: [] };
+  timerPedido = setInterval(vigilarDescargas, 3000);
+  return pedido;
+}
+async function aPapelera(f) {
+  if (process.env.CALC3D_PRUEBA) { try { fs.rmSync(f); } catch (e) { /* ya no estaba */ } return; }
+  await run('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
+    "Add-Type -AssemblyName Microsoft.VisualBasic; [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteFile($env:RUTA,'OnlyErrorDialogs','SendToRecycleBin')"],
+    30000, { env: Object.assign({}, process.env, { RUTA: f }) });
+}
+async function vigilarDescargas() {
+  const p = pedido;
+  if (!p || p.estado !== 'esperando') { clearInterval(timerPedido); return; }
+  if (Date.now() - p.desde > 30 * 60 * 1000) { p.estado = 'vencido'; clearInterval(timerPedido); return; }
+  for (const dir of p.dirs) {
+    let list = [];
+    try { list = fs.readdirSync(dir, { withFileTypes: true }); } catch (e) { continue; }
+    for (const e of list) {
+      if (!e.isFile() || !EXT_DESCARGA.includes(path.extname(e.name).toLowerCase())) continue;
+      const f = path.join(dir, e.name);
+      let st;
+      try { st = fs.statSync(f); } catch (x) { continue; }
+      if (p.ignorados.has(f + ':' + st.size)) continue; // ya probé este archivo y no sirve; si cambia de tamaño se vuelve a probar
+      if (Math.max(st.ctimeMs, st.birthtimeMs) < p.desde - 2000) continue; // ya estaba antes de tocar «Imprimirla»
+      if (p.vistos.get(f) !== st.size) { p.vistos.set(f, st.size); continue; } // todavía se está bajando
+      p.estado = 'procesando'; clearInterval(timerPedido);
+      try {
+        const res = await encolar(() => procesarPieza(fs.readFileSync(f), e.name, Object.assign({}, p.q, { guardar: true })));
+        p.resultado = Object.assign(res, { origen: e.name });
+        p.estado = 'listo';
+        await aPapelera(f);
+      } catch (err) {
+        // no era una pieza (por ejemplo un zip de fotos): se avisa y se sigue esperando
+        p.avisos.push(e.name + ': ' + err.message);
+        p.ignorados.add(f + ':' + st.size);
+        if (pedido === p) { p.estado = 'esperando'; timerPedido = setInterval(vigilarDescargas, 3000); }
+      }
+      return;
+    }
+  }
 }
 
 /* ---------- acceso: la PC entra libre, el celular con clave ---------- */
@@ -474,10 +544,26 @@ const server = http.createServer(async (req, res) => {
       catch (e) { return json(res, 200, { ok: false, error: e.name === 'TimeoutError' ? 'MakerWorld tardó demasiado en responder.' : e.message }); }
     }
 
-    if (req.method === 'POST' && u.pathname === '/api/abrir') {
+    if (req.method === 'POST' && u.pathname === '/api/imprimir') {
       const k = idMakerWorld(u.searchParams.get('url'));
       if (!k) return json(res, 400, { ok: false, error: 'Enlace no válido' });
-      cp.spawn('explorer.exe', ['https://makerworld.com/models/' + k.id], { detached: true, stdio: 'ignore', windowsHide: false }).unref();
+      const q = {
+        mat: u.searchParams.get('mat') || 'PLA',
+        proceso: u.searchParams.get('proceso') || '',
+        soportes: u.searchParams.get('soportes') || 'perfil',
+        relleno: parseFloat(u.searchParams.get('relleno')) || 0,
+        orient: u.searchParams.get('orient') === '1'
+      };
+      const p = armarPedido(q, 'https://makerworld.com/models/' + k.id + (k.perfil ? '#profileId-' + k.perfil : ''));
+      if (!process.env.CALC3D_NO_ABRIR) cp.spawn('explorer.exe', [p.url], { detached: true, stdio: 'ignore', windowsHide: false }).unref();
+      return json(res, 200, { ok: true, id: p.id, carpetas: p.dirs });
+    }
+    if (req.method === 'GET' && u.pathname === '/api/imprimir/estado') {
+      if (!pedido) return json(res, 200, { ok: true, estado: 'ninguno' });
+      return json(res, 200, { ok: true, id: pedido.id, estado: pedido.estado, url: pedido.url, carpetas: pedido.dirs, avisos: pedido.avisos, resultado: pedido.resultado, error: pedido.error });
+    }
+    if (req.method === 'POST' && u.pathname === '/api/imprimir/cancelar') {
+      clearInterval(timerPedido); pedido = null;
       return json(res, 200, { ok: true });
     }
 

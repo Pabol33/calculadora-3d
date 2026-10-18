@@ -313,11 +313,14 @@ a.boton:focus-visible{outline:2px solid var(--acc-hi);outline-offset:2px}
               <span class="mute" id="mwMeta"></span>
               <label for="perfilMW"><span class="t">Perfil de impresión</span></label>
               <select id="perfilMW"></select>
+              <label for="soportesMW"><span class="t">¿Necesita soportes?</span></label>
+              <select id="soportesMW"><option value="pub">Como en la publicación</option><option value="pocos">Pocos soportes (+20 % de tiempo, +10 % de peso)</option><option value="muchos">Muchos soportes (+50 % de tiempo, +25 % de peso)</option></select>
               <p class="hint" id="mwNota"></p>
-              <div class="acts left"><a class="boton" id="mwAbrir" target="_blank" rel="noopener noreferrer">Abrir en MakerWorld</a><button type="button" id="mwPC">Abrir en la PC</button></div>
+              <div class="acts left"><button type="button" class="pri" id="mwImprimir">Imprimirla</button><a class="boton" id="mwAbrir" target="_blank" rel="noopener noreferrer">Abrir en MakerWorld</a></div>
             </div>
           </div>
         </div>
+        <div class="estado" id="estadoImprimir" role="status" aria-live="polite" hidden></div>
         <button type="button" class="drop" id="drop" aria-describedby="estado">
           <span id="dropTxt"><b>Arrastrá el archivo de la pieza</b>y calculo el costo solo<small>.stl · .3mf · .obj · .step · .zip · o el .gcode ya laminado (o tocá para elegirlo)</small></span>
         </button>
@@ -744,7 +747,6 @@ function mostrarMW(j){
   $('perfilMW').innerHTML = j.perfiles.map(p => '<option value="' + p.id + '">' + esc(p.titulo) + ' · ' + Math.round(p.g) + ' g · ' + durSecs(p.secs) + (p.ams ? ' · AMS' : '') + (p.colores > 1 ? ' · ' + p.colores + ' colores' : '') + '</option>').join('');
   $('perfilMW').value = elegirPerfilMW(j).id;
   $('mwAbrir').href = j.url;
-  $('mwPC').hidden = !(S.server && S.est && !S.est.local);
   $('tarjetaMW').hidden = false;
   aplicarMW();
 }
@@ -755,22 +757,71 @@ function aplicarMW(){
   if(!p) return;
   const f = Math.max(1, num('factorBambu') || 1);
   if([...$('mat').options].some(o => o.value === p.mat)) $('mat').value = p.mat;
-  $('gramos').value = Math.round(p.g*10)/10;
-  const mins = Math.max(1, Math.round(p.secs*f/60));
+  const sv = $('soportesMW').value;
+  const tf = sv === 'pocos' ? 1.2 : sv === 'muchos' ? 1.5 : 1, wf = sv === 'pocos' ? 1.1 : sv === 'muchos' ? 1.25 : 1;
+  $('gramos').value = Math.round(p.g*wf*10)/10;
+  const mins = Math.max(1, Math.round(p.secs*f*tf/60));
   $('horas').value = Math.floor(mins/60); $('minutos').value = mins%60;
   if(!val('nombre') || $('nombre').dataset.auto === '1'){ $('nombre').value = j.titulo; $('nombre').dataset.auto = '1'; }
   S.manual = false; S.file = null; S.archivo = ''; S.perfil = 'MakerWorld: ' + p.titulo;
   const maq = PC_BAMBU[p.maquina] || p.maquina;
-  $('mwNota').innerHTML = 'Peso y tiempo salen de la publicación' + (maq ? ' (perfil para una Bambu ' + esc(maq) + ')' : '') + '. El tiempo es el de la Bambu × ' + String(f).replace('.', ',') + ' para tu Genius Pro; el peso no cambia. '
+  const ajuste = sv === 'pocos' ? ' Sumé los soportes: +20 % de tiempo y +10 % de peso.' : sv === 'muchos' ? ' Sumé los soportes: +50 % de tiempo y +25 % de peso.' : '';
+  const ajustes = [p.capa && 'capa de ' + String(p.capa).replace('.', ',') + ' mm', p.paredes && p.paredes + (p.paredes === '1' ? ' pared' : ' paredes'), p.relleno && 'relleno ' + p.relleno].filter(Boolean).join(', ');
+  $('mwNota').innerHTML = 'Peso y tiempo salen de la publicación' + (maq ? ' (perfil para una Bambu ' + esc(maq) + (ajustes ? ': ' + esc(ajustes) : '') + ')' : '') + '. El tiempo es el de la Bambu × ' + String(f).replace('.', ',') + ' para tu Genius Pro. '
+    + 'La publicación no dice si necesita soportes: si tiene voladizos elegí «Pocos» o «Muchos».' + ajuste + ' '
     + (p.ams || p.colores > 1 ? '<b>Este perfil usa varios colores (AMS): el peso suma todos.</b> ' : '')
-    + 'Para el número exacto, bajá el archivo (MakerWorld pide iniciar sesión) y elegilo arriba: puede ser el .zip o el .3mf.';
+    + 'Tocá <b>Imprimirla</b> y la bajo a tu PC con el costo exacto.';
   setEstado('warn', '<b>Calculado desde MakerWorld</b>: ' + Math.round(p.g*10)/10 + ' g · ' + durSecs(p.secs*f) + ' (aproximado)');
   calc();
 }
-async function abrirEnPC(){
+/* ---------- «Imprimirla»: la PC abre MakerWorld, espera la descarga y la guarda descomprimida ---------- */
+let tImprimir;
+function setEstadoImprimir(clase, html){ const e = $('estadoImprimir'); e.className = 'estado ' + clase; e.innerHTML = html; e.hidden = false; }
+async function imprimirMW(){
   if(!S.mw) return;
-  try{ const r = await fetch('api/abrir?url=' + encodeURIComponent(S.mw.url), {method:'POST'}); const j = await r.json(); toast(j.ok ? 'Abierto en la pantalla de tu PC' : 'No pude abrirlo'); }
-  catch(e){ toast('No pude abrirlo'); }
+  const url = S.mw.url + ($('perfilMW').value ? '#profileId-' + $('perfilMW').value : '');
+  const q = new URLSearchParams({url, mat:val('mat'), proceso:val('proceso'), soportes:val('soportes'), relleno:val('relleno')||'', orient:$('orient').checked?'1':'0'});
+  setEstadoImprimir('info', '<b>Avisándole a tu PC…</b>');
+  try{
+    const r = await fetch('api/imprimir?' + q, {method:'POST'});
+    const j = await r.json();
+    if(!j.ok){ setEstadoImprimir('err', esc(j.error)); return; }
+    sondearImprimir(true);
+  }catch(e){ setEstadoImprimir('err', 'No pude avisarle a la PC. ¿Está prendida y con la calculadora abierta?'); }
+}
+function sondearImprimir(ya){
+  clearTimeout(tImprimir);
+  tImprimir = setTimeout(async () => {
+    try{
+      const r = await fetch('api/imprimir/estado', {cache:'no-store'});
+      if(mostrarImprimir(await r.json())) sondearImprimir(false);
+    }catch(e){ setEstadoImprimir('warn', 'Perdí la conexión con la PC. Sigo intentando…'); sondearImprimir(false); }
+  }, ya ? 250 : 3000);
+}
+// devuelve true si hay que seguir esperando
+function mostrarImprimir(j, sinAplicar){
+  const carpetas = (j.carpetas || []).map(esc).join(' o ') || 'Descargas';
+  const avisos = (j.avisos || []).map(a => '<br>' + esc(a)).join('');
+  if(j.estado === 'esperando'){
+    setEstadoImprimir('info', '<b>Falta un paso en tu PC.</b> Se abrió la publicación en su navegador: elegí el perfil y tocá <b>Descargar</b> (MakerWorld pide tu cuenta). Cuando el archivo llegue a <b>' + carpetas + '</b> lo guardo en tu carpeta de impresión, descomprimido, y calculo el costo exacto.' + avisos + ' <button type="button" class="link" id="bCancelarImprimir">Cancelar</button>');
+    return true;
+  }
+  if(j.estado === 'procesando'){ setEstadoImprimir('info', '<b>Llegó el archivo.</b> Lo estoy guardando y calculando el costo…'); return true; }
+  if(j.estado === 'listo' && j.resultado){
+    const rr = j.resultado;
+    if(!sinAplicar){
+      aplicar(rr.g, rr.secs, S.mw ? S.mw.titulo : rr.origen); S.archivo = rr.origen; S.perfil = rr.perfil;
+      setEstado('ok', '<b>Costo exacto con Orca</b> · ' + esc(String(rr.perfil || '').replace(/\s*@.*$/, '')) + ' · ' + (Math.round(rr.g*10)/10) + ' g · ' + dur(Math.floor(rr.secs/3600), Math.round(rr.secs%3600/60)));
+    }
+    const gd = rr.guardado;
+    setEstadoImprimir('ok', '<b>Listo.</b> ' + (gd ? 'Guardada en tu carpeta de impresión: <b>' + esc(ultimoNombre(gd.ruta)) + '</b> (' + gd.archivos + (gd.archivos === 1 ? ' archivo' : ' archivos') + ', ya descomprimida). ' : '')
+      + '<br>Costo exacto con Orca: ' + (Math.round(rr.g*10)/10) + ' g · ' + dur(Math.floor(rr.secs/3600), Math.round(rr.secs%3600/60)) + avisos);
+    return false;
+  }
+  if(j.estado === 'vencido'){ setEstadoImprimir('warn', 'Pasaron 30 minutos sin que llegue el archivo. Tocá «Imprimirla» de nuevo cuando lo vayas a bajar.'); return false; }
+  if(j.estado === 'error'){ setEstadoImprimir('err', '<b>No pude con el archivo.</b> ' + esc(j.error || '')); return false; }
+  $('estadoImprimir').hidden = true;
+  return false;
 }
 const esMakerWorld = s => /^https?:\/\/([\w-]+\.)*makerworld\.com\//i.test(String(s).trim());
 
@@ -900,7 +951,14 @@ function ligar(){
   $('bEnlace').addEventListener('click', leerEnlace);
   $('perfilMW').addEventListener('change', aplicarMW);
   $('factorBambu').addEventListener('input', () => { if(S.mw && /^MakerWorld/.test(S.perfil)) aplicarMW(); });
-  $('mwPC').addEventListener('click', abrirEnPC);
+  $('mwImprimir').addEventListener('click', imprimirMW);
+  $('soportesMW').addEventListener('change', aplicarMW);
+  $('estadoImprimir').addEventListener('click', async e => {
+    if(e.target.id !== 'bCancelarImprimir') return;
+    clearTimeout(tImprimir);
+    try{ await fetch('api/imprimir/cancelar', {method:'POST'}); }catch(x){}
+    $('estadoImprimir').hidden = true;
+  });
   $('celUrls').addEventListener('click', e => { const b = e.target.closest('button[data-copy]'); if(b) copiar(b.dataset.copy); });
   $('bGuardar').addEventListener('click', guardarRegistro);
   $('mbGuardar').addEventListener('click', guardarRegistro);
@@ -973,7 +1031,7 @@ function aplicarCfg(cfg){
   const chip = $('chipOrca');
   if(S.orca){ chip.className = 'est ok'; chip.textContent = 'Orca conectado'; }
   else if(S.server){ chip.className = 'est warn'; chip.textContent = 'Orca no encontrado · estimado'; }
-  else { chip.className = 'est warn'; chip.textContent = 'Sin Orca · estimado desde el STL'; }
+  else { chip.className = 'est warn'; chip.textContent = 'No estás conectado a tu PC, así que no hay Orca: estimo desde el STL. Para usar Orca abrí el enlace del celular que arma tu PC («Usar desde el celular»).'; }
   // con la calculadora de la PC (o el celular conectado a ella): enlace de MakerWorld, guardar en la carpeta y enlace para el celular
   $('bloqueEnlace').hidden = !S.server;
   const carpeta = S.server && S.est && S.est.carpeta;
@@ -989,6 +1047,13 @@ function aplicarCfg(cfg){
     $('celular').hidden = false;
   }
   ligar(); calc(); renderSeg();
+  // si había una descarga esperando (se recargó la página), se sigue mostrando
+  if(S.server){
+    fetch('api/imprimir/estado', {cache:'no-store'}).then(r => r.json()).then(j => {
+      if(['esperando','procesando'].includes(j.estado)){ if(mostrarImprimir(j, true)) sondearImprimir(false); }
+      else if(j.estado === 'listo') mostrarImprimir(j, true);
+    }).catch(() => {});
+  }
 })();
 </script>
 </body>
