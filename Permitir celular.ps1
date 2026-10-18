@@ -20,9 +20,13 @@ if (Test-Path -LiteralPath $conf) {
 $c = Get-NetTCPConnection -LocalPort 3737 -State Listen -ErrorAction SilentlyContinue
 if ($c) { Stop-Process -Id $c.OwningProcess -Force -ErrorAction SilentlyContinue }
 
+# se vuelve a abrir la calculadora con el celular ya activado; se lanza con explorer.exe para que NO corra como administrador
+$vbs = Join-Path $dir 'Calculadora 3D.vbs'
+if (Test-Path -LiteralPath $vbs) { Start-Sleep -Milliseconds 800; Start-Process explorer.exe -ArgumentList ('"' + $vbs + '"') }
+
 Write-Host ''
 Write-Host 'Listo: el celular ya puede abrir la calculadora (puerto 3737, solo desde tu red local).'
-Write-Host 'Ahora abrí la calculadora con el atajo del escritorio y tocá "Usar desde el celular".'
+Write-Host 'Se está abriendo la calculadora: tocá "Usar desde el celular", copiá el enlace y mandátelo al celular.'
 Write-Host 'Para quitar el permiso: Remove-NetFirewallRule -DisplayName "Calculadora 3D (celular)"  y poné "celular": false en config.json.'
 Write-Host ''
 Read-Host 'Enter para cerrar'
