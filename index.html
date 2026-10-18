@@ -1,0 +1,696 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Calculadora 3D</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23090b0e'/%3E%3Crect x='5' y='6' width='22' height='4' rx='1' fill='%232f7bff'/%3E%3Crect x='7' y='10' width='3' height='15' fill='%23566275'/%3E%3Crect x='22' y='10' width='3' height='15' fill='%23566275'/%3E%3Crect x='13' y='13' width='6' height='7' rx='1' fill='%232f7bff'/%3E%3Crect x='4' y='25' width='24' height='3' rx='1' fill='%232f7bff'/%3E%3C/svg%3E">
+<style>
+:root{color-scheme:dark;--bg:#090b0e;--card:#12161c;--ink:#e9edf3;--mute:#8a94a3;--line:#252c36;--acc:#2f7bff;--acc-ink:#fff;--soft:#0f2142;--c1:#2f7bff;--c2:#ffa62b;--c3:#22d3ee;--c4:#9b8cff;--c5:#6b7480;--pos:#4ade80;--neg:#ff6b6b}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(1100px 460px at 50% -160px,#10306a66,transparent),var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:1080px;margin:0 auto;padding:24px 16px 64px}
+/* perfiles de aluminio de la estructura, a los costados */
+body::before,body::after{content:"";position:fixed;top:0;bottom:0;width:12px;display:none;
+  background:linear-gradient(var(--acc),var(--acc)) top/100% 16px no-repeat,repeating-linear-gradient(180deg,#171c23 0 6px,#0c0f13 6px 8px);
+  border-left:1px solid var(--line);border-right:1px solid var(--line)}
+body::before{left:16px}body::after{right:16px}
+@media(min-width:1240px){body::before,body::after{display:block}}
+.hero{display:flex;align-items:center;gap:22px;margin:6px 0 24px}
+.hero svg{width:112px;height:auto;flex:none;filter:drop-shadow(0 0 16px #2f7bff55)}
+@media(max-width:600px){.hero{gap:14px}.hero svg{width:64px}}
+.hero h1{font-size:30px;margin:0;letter-spacing:.04em;text-transform:uppercase;font-weight:800;font-style:italic;line-height:1.1}
+.hero h1 b{color:var(--acc)}
+.badge{display:inline-block;background:var(--acc);color:#fff;font-weight:700;font-style:italic;font-size:12px;padding:2px 8px;border-radius:4px;letter-spacing:.08em;vertical-align:middle;margin-left:10px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.chips span{border:1px solid var(--line);border-radius:999px;padding:2px 11px;font-size:12px;color:var(--mute);background:#0d1117}
+.chips span.est::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:7px;background:var(--c5)}
+.chips span.est.ok::before{background:var(--pos)}
+.chips span.est.warn::before{background:var(--c2)}
+.screen{border:2px solid var(--acc)!important;background:linear-gradient(180deg,#0b1730,#0a0e14 55%)!important;box-shadow:0 0 0 5px #0a0d12,0 0 34px #2f7bff33}
+.grid{display:grid;grid-template-columns:1fr 360px;gap:20px;align-items:start}
+@media(max-width:860px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+.card h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--mute);margin:0 0 14px;font-weight:600}
+.card h2::before{content:"";display:inline-block;width:8px;height:8px;background:var(--acc);margin-right:9px;border-radius:2px;vertical-align:1px}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+label{display:block;font-size:13px;color:var(--mute)}
+label>span.t{display:block;margin-bottom:4px}
+.f{position:relative}
+input,select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--ink);font:inherit}
+input[type=checkbox]{width:auto;accent-color:var(--acc)}
+input:focus,select:focus{outline:2px solid var(--acc);outline-offset:-1px;border-color:transparent}
+.f .u{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--mute);font-size:12px;pointer-events:none}
+.f input.hasu{padding-right:42px}
+.hint{font-size:12px;color:var(--mute);margin:8px 0 0}
+.drop{border:1.5px dashed var(--line);border-radius:12px;padding:18px 16px;text-align:center;color:var(--mute);cursor:pointer;margin-bottom:12px;transition:.15s}
+.drop:hover,.drop.over{border-color:var(--acc);background:var(--soft);color:var(--ink)}
+.drop b{color:var(--ink)}
+.drop small{display:block;margin-top:4px;font-size:12px}
+.estado{font-size:13px;border-radius:10px;padding:9px 12px;margin:0 0 14px;background:var(--bg);border:1px solid var(--line);color:var(--mute)}
+.estado.info{border-color:var(--acc);color:var(--ink)}
+.estado.ok{border-color:#1f6f43;color:var(--ink)}
+.estado.warn{border-color:#8a5a12;color:var(--ink)}
+.estado.err{border-color:#8a2b2b;color:var(--ink)}
+.estado b{color:var(--ink)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:14px}
+.seg button{border:0;border-radius:0;background:transparent;padding:8px 20px;color:var(--mute)}
+.seg button.on{background:var(--acc);color:#fff}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:14px;align-items:end}
+.chk{display:flex;align-items:center;gap:8px;padding-bottom:9px}
+.pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.pills button{flex:1;min-width:64px}
+button{font:inherit;padding:9px 14px;border-radius:9px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--acc)}
+button.on,button.pri{background:var(--acc);color:var(--acc-ink);border-color:var(--acc);font-weight:600}
+button.link{border:0;background:none;color:var(--mute);padding:4px 0;text-decoration:underline;font-size:13px}
+.res{position:sticky;top:16px}
+@media(max-width:860px){.res{position:static}}
+.big{font-size:40px;font-weight:700;letter-spacing:-.02em;line-height:1.1;margin:2px 0}
+.lbl{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
+.two div b{display:block;font-size:19px}
+.bar{display:flex;height:10px;border-radius:6px;overflow:hidden;background:var(--line);margin:14px 0 10px}
+.bar i{display:block;height:100%}
+.line{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:14px}
+.line .dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:8px}
+.line em{font-style:normal;color:var(--mute);font-size:12px;margin-left:6px}
+.line.tot{border-top:1px solid var(--line);margin-top:6px;padding-top:10px;font-weight:700}
+.mute{color:var(--mute);font-size:13px}
+.acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.acts button{flex:1}
+.pos{color:var(--pos)}.neg{color:var(--neg)}
+/* seguimiento */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+.tile{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.tile b{display:block;font-size:21px;letter-spacing:-.01em}
+.tile small{color:var(--mute);font-size:12px}
+.tile.main{border-color:var(--acc);background:#0b1b3a}
+.filtros{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 4px}
+.filtros button{padding:6px 14px;font-size:13px}
+.tbl-wrap{overflow-x:auto;margin-bottom:18px}
+.tbl{width:100%;border-collapse:collapse;font-size:14px;min-width:520px}
+.tbl th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--mute);text-align:right;padding:6px;border-bottom:1px solid var(--line);font-weight:600}
+.tbl td{padding:8px 6px;text-align:right;border-bottom:1px solid var(--line)}
+.tbl th:first-child,.tbl td:first-child{text-align:left}
+.reg{border-top:1px solid var(--line);padding:12px 0}
+.reg:first-child{border-top:0}
+.reg-top{display:flex;align-items:center;gap:10px}
+.reg-nombre{flex:1;min-width:0}
+.reg-nombre b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.reg-nombre small{color:var(--mute);font-size:12px}
+.tipo{padding:3px 11px;border-radius:999px;font-size:12px;font-weight:700;border:1px solid;white-space:nowrap}
+.tipo.venta{background:var(--acc);border-color:var(--acc);color:#fff}
+.tipo.personal{background:transparent;border-color:var(--c2);color:var(--c2)}
+.reg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:10px;margin-top:8px;align-items:end}
+.reg-grid b{display:block;font-size:15px}
+.reg-grid input{padding:6px 8px}
+.reg button{padding:6px 12px;font-size:13px}
+details{color:var(--mute);font-size:14px}
+details summary{cursor:pointer;color:var(--ink);font-weight:600}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:9px;opacity:0;transition:.2s;pointer-events:none;z-index:9}
+.toast.show{opacity:1}
+[hidden]{display:none!important}
+#quote{display:none}
+@media print{
+  body>*:not(#quote){display:none!important}
+  #quote{display:block!important;color:#000;background:#fff;font:15px/1.5 system-ui,sans-serif;padding:20px}
+  #quote h1{font-size:24px;margin:0 0 4px}
+  #quote table{width:100%;border-collapse:collapse;margin-top:18px}
+  #quote td,#quote th{border-bottom:1px solid #bbb;padding:9px 6px;text-align:left}
+  #quote td.r,#quote th.r{text-align:right}
+  #quote .tot td{font-weight:700;font-size:17px;border-bottom:0}
+  #quote .nota{margin-top:24px;font-size:12px;color:#555}
+}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header class="hero">
+    <svg viewBox="0 0 200 240" aria-hidden="true" role="img">
+      <circle cx="100" cy="26" r="24" fill="#2f7bff" stroke="#05070a" stroke-width="2"/>
+      <circle cx="100" cy="26" r="15" fill="none" stroke="#05070a" stroke-opacity=".35" stroke-width="2"/>
+      <circle cx="100" cy="26" r="8" fill="#0b0d10"/>
+      <rect x="95" y="46" width="10" height="8" fill="#14181e"/>
+      <rect x="26" y="52" width="148" height="13" rx="3" fill="#2f7bff"/>
+      <rect x="32" y="65" width="11" height="124" fill="#252c36" stroke="#566275"/>
+      <rect x="157" y="65" width="11" height="124" fill="#252c36" stroke="#566275"/>
+      <rect x="43" y="112" width="114" height="8" fill="#2a323d" stroke="#566275"/>
+      <rect x="86" y="102" width="28" height="32" rx="4" fill="#2f7bff"/>
+      <circle cx="100" cy="116" r="9" fill="#0b0d10" stroke="#1a56c4" stroke-width="2"/>
+      <path d="M96 134h8l-4 12z" fill="#cfd5dd"/>
+      <rect x="40" y="176" width="120" height="8" rx="2" fill="#262d36"/>
+      <path d="M90 176c0-9 4-16 10-16s10 7 10 16z" fill="#ff8a1f"/>
+      <rect x="18" y="184" width="164" height="40" rx="5" fill="#1b222b" stroke="#566275"/>
+      <rect x="30" y="192" width="42" height="24" rx="3" fill="#0e2f66" stroke="#2f7bff"/>
+      <rect x="35" y="197" width="14" height="3" fill="#22d3ee"/><rect x="35" y="203" width="22" height="3" fill="#ffa62b"/><rect x="35" y="209" width="10" height="3" fill="#9b8cff"/>
+      <rect x="22" y="224" width="22" height="8" rx="2" fill="#2f7bff"/><rect x="156" y="224" width="22" height="8" rx="2" fill="#2f7bff"/>
+    </svg>
+    <div>
+      <h1>Calculadora <b>3D</b><span class="badge">GENIUS PRO</span></h1>
+      <div class="chips"><span>Artillery Genius Pro</span><span>220 × 220 × 250 mm</span><span>PLA 1,75 mm · boquilla 0,4</span><span>Pesos argentinos</span><span class="est" id="chipOrca">Conectando…</span></div>
+    </div>
+  </header>
+
+  <div class="grid">
+    <div>
+      <section class="card">
+        <h2>Pieza</h2>
+        <div class="seg" id="tipoSeg"><button data-t="venta">Para venta</button><button data-t="personal">Para mí</button></div>
+        <div class="drop" id="drop">
+          <div><b>Arrastrá el archivo de la pieza</b> y calculo el costo solo<small>.stl · .3mf · .obj · .step · o el .gcode ya laminado (o tocá para elegirlo)</small></div>
+          <input type="file" id="file" accept=".stl,.3mf,.obj,.step,.stp,.gcode,.gco,.g,.txt" hidden>
+        </div>
+        <div class="estado" id="estado" hidden></div>
+        <div class="opts" id="opts">
+          <label id="lProceso"><span class="t">Perfil de laminado</span><select id="proceso"></select></label>
+          <label id="lSoportes"><span class="t">Soportes</span><select id="soportes"><option value="perfil">Según el perfil</option><option value="si">Con soportes</option><option value="no">Sin soportes</option></select></label>
+          <label><span class="t">Relleno</span><div class="f"><input id="relleno" type="number" step="1" min="0" max="100" class="hasu" placeholder="perfil"><span class="u">%</span></div></label>
+          <label class="chk" id="lOrient"><input type="checkbox" id="orient"><span>Orientar solo</span></label>
+        </div>
+        <div class="row" style="margin-bottom:12px">
+          <label style="grid-column:1/-1"><span class="t">Nombre de la pieza</span><input id="nombre" placeholder="Ej: soporte de auriculares"></label>
+        </div>
+        <div class="row">
+          <label><span class="t">Material</span>
+            <select id="mat"><option>PLA</option><option>PETG</option><option>ABS</option><option>TPU</option></select></label>
+          <label><span class="t">Peso total de la impresión</span><div class="f"><input id="gramos" type="number" step="any" min="0" class="hasu"><span class="u">g</span></div></label>
+          <label><span class="t">Horas</span><div class="f"><input id="horas" type="number" step="1" min="0" class="hasu"><span class="u">h</span></div></label>
+          <label><span class="t">Minutos</span><div class="f"><input id="minutos" type="number" step="1" min="0" class="hasu"><span class="u">min</span></div></label>
+          <label><span class="t">Piezas en esa impresión</span><input id="qty" type="number" step="1" min="1"></label>
+          <label><span class="t">Desperdicio y fallos</span><div class="f"><input id="desp" type="number" step="any" min="0" class="hasu"><span class="u">%</span></div></label>
+        </div>
+        <p class="hint">El desperdicio cubre purga, soportes que se tiran y alguna impresión fallida. Con 5 % arrancás bien; subilo si fallás seguido.</p>
+      </section>
+
+      <section class="card">
+        <h2>Tus precios y tu máquina</h2>
+        <div class="row">
+          <label><span class="t">Filamento (el material elegido)</span><div class="f"><input id="precioKg" type="number" step="any" min="0" class="hasu" style="padding-right:56px"><span class="u">$ / kg</span></div></label>
+          <label><span class="t">Consumo promedio</span><div class="f"><input id="watts" type="number" step="any" min="0" class="hasu"><span class="u">W</span></div></label>
+          <label><span class="t">Costo de la luz</span><div class="f"><input id="kwh" type="number" step="any" min="0" class="hasu" style="padding-right:56px"><span class="u">$ / kWh</span></div></label>
+          <label><span class="t">Lo que costó la impresora</span><div class="f"><input id="costoImp" type="number" step="any" min="0"></div></label>
+          <label><span class="t">Vida útil estimada</span><div class="f"><input id="vida" type="number" step="any" min="1" class="hasu"><span class="u">h</span></div></label>
+        </div>
+        <p class="hint">Costo de la luz: dividí el total de la factura por los kWh que dice. Consumo: ~120 W es un promedio razonable para la Genius con PLA; con un medidor de enchufe sale el real. Desgaste por hora = costo × 1,2 ÷ vida útil. <button class="link" id="bReset">Volver a valores iniciales</button></p>
+      </section>
+
+      <section class="card" id="cardTrabajo">
+        <h2>Tu trabajo y extras</h2>
+        <div class="row">
+          <label><span class="t">Tiempo tuyo (quitar soportes, lijar, armar)</span><div class="f"><input id="hTrab" type="number" step="any" min="0" class="hasu"><span class="u">h</span></div></label>
+          <label><span class="t">Valor de tu hora</span><div class="f"><input id="valHora" type="number" step="any" min="0" class="hasu" style="padding-right:48px"><span class="u">$ / h</span></div></label>
+          <label><span class="t">Extras (imanes, llaveros, caja, envío)</span><div class="f"><input id="extras" type="number" step="any" min="0"></div></label>
+        </div>
+      </section>
+
+      <section class="card" id="cardGanancia">
+        <h2>Ganancia</h2>
+        <div class="pills" id="pills">
+          <button data-m="2">x2 · Mayorista</button>
+          <button data-m="3">x3 · Media</button>
+          <button data-m="4">x4 · Estándar</button>
+          <button data-m="5">x5 · Minorista</button>
+        </div>
+        <div class="row">
+          <label><span class="t">Multiplicador del costo</span><input id="margen" type="number" step="any" min="1"></label>
+          <label><span class="t">Redondear el precio hacia arriba a</span>
+            <select id="redondeo"><option value="0">Sin redondear</option><option value="10">$ 10</option><option value="50">$ 50</option><option value="100">$ 100</option><option value="500">$ 500</option><option value="1000">$ 1.000</option></select></label>
+        </div>
+      </section>
+    </div>
+
+    <aside class="res">
+      <section class="card screen">
+        <div class="lbl" id="lblPrincipal">Precio de venta por pieza</div>
+        <div class="big" id="vVenta">$ 0</div>
+        <div id="bloqueVenta">
+          <div class="two">
+            <div><span class="lbl">Costo por pieza</span><b id="vUnit">$ 0</b></div>
+            <div><span class="lbl">Ganancia total</span><b id="vGan">$ 0</b></div>
+          </div>
+        </div>
+        <div id="bloquePersonal" hidden>
+          <div class="two">
+            <div><span class="lbl">Costo total</span><b id="vTotalP">$ 0</b></div>
+            <div><span class="lbl">Piezas</span><b id="vQtyP">1</b></div>
+          </div>
+        </div>
+        <div class="bar" id="bar"></div>
+        <div id="lines"></div>
+        <div class="line tot"><span>Costo total</span><span id="vTotal">$ 0</span></div>
+        <div class="line"><span class="mute" id="vVentaTot"></span><span class="mute" id="vReal"></span></div>
+        <div class="acts">
+          <button class="pri" id="bGuardar">Guardar en el seguimiento</button>
+        </div>
+        <div class="acts" id="actsCliente">
+          <button id="bCopiar">Copiar texto</button>
+          <button id="bImprimir">Imprimir</button>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <section class="card" id="seguimiento">
+    <h2>Seguimiento de costos y ganancias</h2>
+    <div class="tiles" id="tiles"></div>
+    <div class="lbl" style="margin-bottom:6px">Por mes</div>
+    <div class="tbl-wrap"><table class="tbl" id="meses"></table></div>
+    <div class="lbl">Piezas y proyectos</div>
+    <div class="filtros" id="filtros">
+      <button data-f="todas">Todas</button><button data-f="venta">Para venta</button><button data-f="personal">Para mí</button>
+    </div>
+    <div id="lista"></div>
+    <div class="acts" style="justify-content:flex-start">
+      <button id="bCsv" style="flex:0 0 auto">Exportar a Excel (.csv)</button>
+      <button id="bResp" style="flex:0 0 auto">Respaldo (.json)</button>
+      <button id="bRest" style="flex:0 0 auto">Restaurar respaldo</button>
+      <input type="file" id="fileRest" accept=".json,application/json" hidden>
+    </div>
+    <p class="hint" id="dondeDatos"></p>
+  </section>
+
+  <details>
+    <summary>Cómo se calcula</summary>
+    <p><b>Material</b> = gramos × (1 + desperdicio) ÷ 1000 × precio por kg.<br>
+    <b>Luz</b> = watts ÷ 1000 × horas × kWh × factor del material.<br>
+    <b>Desgaste</b> = costo de la impresora × 1,2 ÷ vida útil × horas × factor del material.<br>
+    <b>Tu trabajo</b> = horas tuyas × valor de la hora. Las piezas «para mí» no lo llevan, ni los extras.<br>
+    <b>Costo total</b> = todo lo anterior; el costo por pieza es ese total ÷ cantidad.<br>
+    <b>Venta</b> = costo por pieza × multiplicador, redondeado hacia arriba.</p>
+    <p><b>Seguimiento:</b> ganancia = lo cobrado − el costo de las piezas que vendiste (costo por pieza × vendidas). Las que quedan sin vender figuran como stock a costo. Las piezas «para mí» suman al gasto pero no a la ganancia.</p>
+    <p>Factores del material (luz / desgaste): PLA 1 / 1, PETG 1,15 / 1,30, ABS 1,60 / 1,25, TPU 1,05 / 1,35.</p>
+    <p><b>De dónde salen los gramos y el tiempo:</b> con el atajo de tu PC, la pieza se lamina con tu OrcaSlicer (tu perfil y tu filamento) y el número es el mismo que verías en Orca. Sin Orca (por ejemplo en la versión de internet) se estima desde la forma del STL u OBJ con un modelo calibrado contra tu Orca; ronda un ±15 % y no cuenta los soportes. Los archivos se leen en tu navegador o en tu PC, no se suben a ningún lado.</p>
+  </details>
+</main>
+
+<div id="quote"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const MAT = {PLA:{d:1.24,e:1,w:1}, PETG:{d:1.27,e:1.15,w:1.3}, ABS:{d:1.04,e:1.6,w:1.25}, TPU:{d:1.21,e:1.05,w:1.35}};
+const DEF = {nombre:'',mat:'PLA',gramos:30,horas:2,minutos:3,qty:1,desp:5,relleno:'',soportes:'perfil',orient:false,proceso:'',
+  precioKg:22000,watts:120,kwh:150,costoImp:450000,vida:3000,hTrab:0.25,valHora:6000,extras:0,margen:3,redondeo:100};
+const IDS = Object.keys(DEF);
+const PRECIOS = ['precioKg','watts','kwh','costoImp','vida','hTrab','valHora','extras','margen','redondeo','desp'];
+const S = {server:false, orca:false, est:null, tipo:'venta', registro:[], filtro:'todas', file:null, manual:false, tok:0, archivo:'', perfil:'', origen:''};
+let last = null;
+
+const store = {
+  get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+};
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = n => (n<0?'-':'') + '$ ' + Math.abs(Math.round(n)).toLocaleString('es-AR');
+const dur = (h,m) => (h ? h+' h ' : '') + m + ' min';
+const num = id => { const v = parseFloat($(id).value); return isFinite(v) ? v : 0; };
+const val = id => $(id).type === 'checkbox' ? $(id).checked : $(id).value;
+const setVal = (id,v) => { if($(id).type === 'checkbox') $(id).checked = !!v; else $(id).value = v; };
+const hoy = () => { const d = new Date(), p = n => String(n).padStart(2,'0'); return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); };
+const fechaCorta = f => { const [y,m,d] = f.split('-'); return d+'/'+m+'/'+y; };
+const mesNombre = ym => { const [y,m] = ym.split('-'); return ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][+m-1] + ' ' + y; };
+function toast(t){ const e=$('toast'); e.textContent=t; e.classList.add('show'); clearTimeout(toast.t); toast.t=setTimeout(()=>e.classList.remove('show'),1800); }
+
+/* ---------- guardado: disco de la PC (servidor) y respaldo en el navegador ---------- */
+function cfgActual(){ const c = {tipo:S.tipo}; IDS.forEach(id => c[id] = val(id)); return c; }
+let tPersist;
+function persistSoon(){ clearTimeout(tPersist); tPersist = setTimeout(persist, 350); }
+async function persist(){
+  const d = {v:2, cfg:cfgActual(), registro:S.registro};
+  store.set('calc3d.datos', d);
+  if(S.server){
+    try{ await fetch('api/datos',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)}); }
+    catch(e){ toast('No pude guardar en el disco de la PC'); }
+  }
+}
+async function detectarServidor(){
+  try{
+    const r = await fetch('api/estado',{cache:'no-store'});
+    if(!r.ok || !(r.headers.get('content-type')||'').includes('json')) throw 0;
+    const e = await r.json();
+    S.server = true; S.orca = !!e.orca; S.est = e;
+    $('proceso').innerHTML = (e.procesos||[]).map(p => '<option value="'+esc(p.name)+'">'+esc(p.name.replace(/\s*@.*$/,''))+(p.usuario?' · tuyo':'')+'</option>').join('');
+  }catch(e){ S.server = false; S.orca = false; }
+}
+async function cargarDatos(){
+  if(S.server){
+    try{ const r = await fetch('api/datos',{cache:'no-store'}); const d = await r.json(); if(d && (d.registro || d.cfg)) return d; }catch(e){}
+  }
+  return store.get('calc3d.datos') || {};
+}
+
+/* ---------- cálculo ---------- */
+function calc(){
+  const m = MAT[val('mat')] || MAT.PLA;
+  const personal = S.tipo === 'personal';
+  const g = num('gramos'), desp = num('desp')/100;
+  const hrs = num('horas') + num('minutos')/60;
+  const qty = Math.max(1, Math.round(num('qty')) || 1);
+  const base = [
+    {k:'Filamento', v:g*(1+desp)/1000*num('precioKg'), c:'--c1'},
+    {k:'Luz', v:num('watts')/1000*hrs*m.e*num('kwh'), c:'--c2'},
+    {k:'Desgaste de la impresora', v:num('costoImp')*1.2/Math.max(1,num('vida'))*m.w*hrs, c:'--c3'}
+  ];
+  const extra = [
+    {k:'Tu trabajo', v:num('hTrab')*num('valHora'), c:'--c4'},
+    {k:'Extras', v:num('extras'), c:'--c5'}
+  ];
+  const costoP = base.reduce((a,p)=>a+p.v,0);
+  const costoV = costoP + extra.reduce((a,p)=>a+p.v,0);
+  const parts = personal ? base : base.concat(extra);
+  const total = personal ? costoP : costoV;
+  const unit = total/qty;
+  let precio = costoV/qty*Math.max(1,num('margen'));
+  const r = num('redondeo'); if(r>0) precio = Math.ceil(precio/r - 1e-9)*r;
+  const saleTot = precio*qty, gan = saleTot-costoV;
+
+  $('lblPrincipal').textContent = personal ? 'Lo que cuesta hacerla · por pieza' : 'Precio de venta por pieza';
+  $('vVenta').textContent = money(personal ? unit : precio);
+  $('vUnit').textContent = money(costoV/qty);
+  $('vGan').textContent = money(gan);
+  $('vTotalP').textContent = money(total);
+  $('vQtyP').textContent = qty;
+  $('vTotal').textContent = money(total);
+  $('vVentaTot').textContent = !personal && qty>1 ? 'Venta de las ' + qty + ' piezas: ' + money(saleTot) : (personal ? 'Para vos: no cuenta como venta' : '');
+  $('vReal').textContent = !personal && saleTot>0 ? 'Ganancia real: ' + Math.round(gan/saleTot*100) + ' % de la venta' : '';
+  $('bar').innerHTML = parts.map(p => total>0 && p.v>0 ? '<i style="width:'+(p.v/total*100)+'%;background:var('+p.c+')"></i>' : '').join('');
+  $('lines').innerHTML = parts.map(p => '<div class="line"><span><span class="dot" style="background:var('+p.c+')"></span>'+p.k+(total>0&&p.v>0?'<em>'+Math.round(p.v/total*100)+' %</em>':'')+'</span><span>'+money(p.v)+'</span></div>').join('');
+  document.querySelectorAll('#pills button').forEach(b => b.classList.toggle('on', parseFloat(b.dataset.m) === num('margen')));
+  $('bloqueVenta').hidden = personal; $('bloquePersonal').hidden = !personal;
+  $('cardTrabajo').hidden = personal; $('cardGanancia').hidden = personal; $('actsCliente').hidden = personal;
+  document.querySelectorAll('#tipoSeg button').forEach(b => b.classList.toggle('on', b.dataset.t === S.tipo));
+
+  last = {nombre:val('nombre').trim() || 'Pieza sin nombre', tipo:S.tipo, mat:val('mat'), g, h:num('horas'), mi:num('minutos'), qty, costoV, costoP, total, unit, precio, saleTot, gan};
+  persistSoon();
+}
+
+/* ---------- lectura del archivo de la pieza ---------- */
+function setEstado(clase, html){ const e = $('estado'); e.className = 'estado ' + clase; e.innerHTML = html; e.hidden = false; }
+function parseDur(s){ let t = 0, m; const re = /(\d+(?:\.\d+)?)\s*([dhms])/g; while((m = re.exec(s))) t += parseFloat(m[1]) * {d:86400,h:3600,m:60,s:1}[m[2]]; return t; }
+function aplicar(g, secs, nombreArchivo){
+  if(g != null) $('gramos').value = Math.round(g*10)/10;
+  if(secs != null){ const mins = Math.max(1, Math.round(secs/60)); $('horas').value = Math.floor(mins/60); $('minutos').value = mins%60; }
+  if(nombreArchivo && (!val('nombre') || $('nombre').dataset.auto === '1')){
+    $('nombre').value = nombreArchivo.replace(/\.[^.]+$/,'').replace(/[_+]+/g,' ').trim(); $('nombre').dataset.auto = '1';
+  }
+  S.manual = false;
+  calc();
+}
+async function leerGcode(file){
+  const N = 400000;
+  let txt = await file.slice(0, N).text();
+  if(file.size > N) txt += '\n' + await file.slice(Math.max(N, file.size - N)).text();
+  let g = null, secs = null, m, src = 'Orca/Prusa';
+  if((m = txt.match(/;\s*total filament weight \[g\]\s*:\s*([\d.]+)/i))) g = parseFloat(m[1]);
+  else if((m = txt.match(/;\s*total filament used \[g\]\s*=\s*([\d.]+)/i))) g = parseFloat(m[1]);
+  else if((m = txt.match(/;\s*filament used \[g\]\s*=\s*([\d.,\s]+)/i))) g = m[1].split(',').reduce((a,x)=>a+(parseFloat(x)||0),0);
+  else if((m = txt.match(/;\s*Filament used:\s*([\d.]+)\s*m/i))) { src = 'Cura'; g = parseFloat(m[1]) * Math.PI * 0.0875**2 * 100 * MAT[val('mat')].d; }
+  if((m = txt.match(/;\s*total estimated time:\s*([^\r\n]+)/i))) secs = parseDur(m[1]);
+  else if((m = txt.match(/;\s*estimated printing time \(normal mode\)\s*=\s*([^\r\n]+)/i))) secs = parseDur(m[1]);
+  else if((m = txt.match(/;\s*TIME:\s*(\d+)/))) secs = parseInt(m[1],10);
+  if(g == null && secs == null){ setEstado('err','<b>No encontré gramos ni tiempo</b> en ese archivo. ¿Es un .gcode? Cargalos a mano abajo.'); return; }
+  aplicar(g, secs, file.name);
+  S.archivo = file.name; S.perfil = '';
+  setEstado('ok','<b>Leído del gcode</b> ('+src+'): '+(g!=null?Math.round(g*10)/10+' g':'sin gramos')+' · '+(secs!=null?dur(Math.floor(secs/3600), Math.round(secs%3600/60)):'sin tiempo'));
+}
+
+/* geometría para el estimado (STL binario/ASCII y OBJ) */
+function medirMalla(buf, ext){
+  let V = 0, SA = 0; const mn = [1e18,1e18,1e18], mx = [-1e18,-1e18,-1e18];
+  const tri = (a,b,c) => {
+    V += (a[0]*(b[1]*c[2]-b[2]*c[1]) - a[1]*(b[0]*c[2]-b[2]*c[0]) + a[2]*(b[0]*c[1]-b[1]*c[0])) / 6;
+    const ux=b[0]-a[0], uy=b[1]-a[1], uz=b[2]-a[2], wx=c[0]-a[0], wy=c[1]-a[1], wz=c[2]-a[2];
+    SA += Math.hypot(uy*wz-uz*wy, uz*wx-ux*wz, ux*wy-uy*wx) / 2;
+    for(const p of [a,b,c]) for(let k=0;k<3;k++){ if(p[k]<mn[k]) mn[k]=p[k]; if(p[k]>mx[k]) mx[k]=p[k]; }
+  };
+  let n = 0;
+  if(ext === '.stl'){
+    const dv = new DataView(buf); const cnt = buf.byteLength >= 84 ? dv.getUint32(80,true) : 0;
+    if(buf.byteLength === 84 + 50*cnt && cnt > 0){
+      for(let i=0;i<cnt;i++){ let o = 84 + 50*i + 12; const p = [];
+        for(let v=0;v<3;v++){ p.push([dv.getFloat32(o,true), dv.getFloat32(o+4,true), dv.getFloat32(o+8,true)]); o += 12; }
+        tri(p[0],p[1],p[2]); n++; }
+    } else {
+      const txt = new TextDecoder().decode(buf); const re = /vertex\s+([-+\d.eE]+)\s+([-+\d.eE]+)\s+([-+\d.eE]+)/g; let m; const q = [];
+      while((m = re.exec(txt))){ q.push([+m[1],+m[2],+m[3]]); if(q.length === 3){ tri(q[0],q[1],q[2]); n++; q.length = 0; } }
+    }
+  } else if(ext === '.obj'){
+    const lines = new TextDecoder().decode(buf).split(/\r?\n/); const vs = [];
+    for(const ln of lines){
+      if(ln.startsWith('v ')){ const t = ln.trim().split(/\s+/); vs.push([+t[1],+t[2],+t[3]]); }
+      else if(ln.startsWith('f ')){
+        const ix = ln.trim().split(/\s+/).slice(1).map(s => { let i = parseInt(s.split('/')[0],10); return i < 0 ? vs.length + i : i - 1; });
+        for(let k=1;k+1<ix.length;k++){ if(vs[ix[0]] && vs[ix[k]] && vs[ix[k+1]]){ tri(vs[ix[0]], vs[ix[k]], vs[ix[k+1]]); n++; } }
+      }
+    }
+  }
+  if(!n) return null;
+  return {V:Math.abs(V), SA, bx:mx[0]-mn[0], by:mx[1]-mn[1], h:mx[2]-mn[2], tris:n};
+}
+/* modelo calibrado contra OrcaSlicer (perfil 0.20mm Standard, PLA, Artillery Genius): ~5 % en peso, ~8 % en tiempo */
+function estimarMalla(s){
+  const rel = (val('relleno') !== '' ? num('relleno') : 15)/100;
+  const shell = Math.min(s.V, s.SA*1.21);
+  const cm3 = (shell + 1.14*rel*(s.V - shell))/1000;
+  const capas = Math.max(1, Math.ceil(s.h/0.2));
+  return {g:cm3*(MAT[val('mat')]||MAT.PLA).d, secs:90 + Math.max(capas*8.25, 300*cm3), capas};
+}
+function dimTexto(s){
+  const fmt = n => (Math.round(n*10)/10).toLocaleString('es-AR');
+  const cabe = (s.bx<=220 && s.by<=220 || s.bx<=220 && s.by<=220) && s.h<=250;
+  const diag = Math.max(s.bx,s.by,s.h);
+  let t = 'Mide ' + fmt(s.bx) + ' × ' + fmt(s.by) + ' × ' + fmt(s.h) + ' mm';
+  if(!cabe) t += ' · <b>no entra en la cama (220 × 220 × 250)</b>, habría que partirla o escalarla';
+  else if(diag < 3) t += ' · tamaño muy chico, ¿el archivo está en metros o pulgadas?';
+  return {t, cabe};
+}
+async function estimarArchivo(file, motivo){
+  const ext = (file.name.match(/\.[^.]+$/)||[''])[0].toLowerCase();
+  if(ext !== '.stl' && ext !== '.obj'){
+    setEstado('warn', '<b>Los .'+ext.slice(1)+' solo los puedo laminar con Orca.</b> Abrí la calculadora con el atajo de tu PC, o exportá la pieza como STL, o cargá gramos y tiempo a mano.');
+    return;
+  }
+  const s = medirMalla(await file.arrayBuffer(), ext);
+  if(!s){ setEstado('err','<b>No pude leer la forma</b> de ese archivo.'); return; }
+  const e = estimarMalla(s), d = dimTexto(s);
+  aplicar(e.g, e.secs, file.name);
+  S.archivo = file.name; S.perfil = 'estimado';
+  setEstado('warn', (motivo ? motivo + ' ' : '') + '<b>Estimado</b> desde la forma (±15 %, sin soportes): '+Math.round(e.g*10)/10+' g · '+dur(Math.floor(e.secs/3600), Math.round(e.secs%3600/60))+'.<br>'+d.t+'. Para el número exacto, usá el atajo de tu PC y la lamino con tu Orca.');
+}
+async function laminarConOrca(file){
+  const tok = ++S.tok;
+  const q = new URLSearchParams({archivo:file.name, mat:val('mat'), proceso:val('proceso'), soportes:val('soportes'), relleno:val('relleno')||'', orient:$('orient').checked?'1':'0'});
+  setEstado('info','<b>Laminando con Orca…</b> <span id="segTimer">0</span> s');
+  const t0 = Date.now(), iv = setInterval(() => { const e = $('segTimer'); if(e) e.textContent = Math.round((Date.now()-t0)/1000); }, 500);
+  try{
+    const r = await fetch('api/laminar?' + q, {method:'POST', body:file});
+    const j = await r.json();
+    if(tok !== S.tok) return;
+    if(!j.ok){
+      const ext = (file.name.match(/\.[^.]+$/)||[''])[0].toLowerCase();
+      if(ext === '.stl' || ext === '.obj') return estimarArchivo(file, '<b>Orca no pudo laminarla</b> ('+esc(j.error)+').');
+      setEstado('err','<b>Orca no pudo laminarla.</b> '+esc(j.error)); return;
+    }
+    aplicar(j.g, j.secs, file.name);
+    S.archivo = file.name; S.perfil = j.perfil;
+    let dimt = '';
+    const ext = (file.name.match(/\.[^.]+$/)||[''])[0].toLowerCase();
+    if(ext === '.stl' || ext === '.obj'){ try{ const s = medirMalla(await file.arrayBuffer(), ext); if(s) dimt = '<br>' + dimTexto(s).t; }catch(e){} }
+    setEstado('ok','<b>Laminado con Orca</b> · '+esc(j.perfil.replace(/\s*@.*$/,''))+' · relleno '+esc(j.relleno||'?')+' · '+(j.soportes?'con':'sin')+' soportes · '+j.capas+' capas<br>'+(Math.round(j.g*10)/10)+' g · '+dur(Math.floor(j.secs/3600), Math.round(j.secs%3600/60))+dimt);
+  }catch(e){
+    if(tok === S.tok) setEstado('err','No pude hablar con el servidor de la calculadora. ¿Sigue abierto? Abrila de nuevo con el atajo.');
+  }finally{ clearInterval(iv); }
+}
+async function procesarArchivo(file){
+  if(!file) return;
+  const ext = (file.name.match(/\.[^.]+$/)||[''])[0].toLowerCase();
+  if(['.gcode','.gco','.g','.txt'].includes(ext)){ S.file = null; return leerGcode(file); }
+  S.file = file;
+  if(S.orca) return laminarConOrca(file);
+  return estimarArchivo(file, '');
+}
+let tRe;
+function relaminarSoon(){
+  if(!S.file || S.manual) return;
+  clearTimeout(tRe); tRe = setTimeout(() => procesarArchivo(S.file), 700);
+}
+
+/* ---------- seguimiento ---------- */
+const costoDe = e => e.tipo === 'personal' ? e.costoP : e.costoV;
+function resumen(list){
+  const r = {cobrado:0, costoVendido:0, stock:0, stockU:0, personal:0, invertido:0, nVenta:0, nPers:0};
+  for(const e of list){
+    if(e.tipo === 'personal'){ r.personal += e.costoP; r.nPers++; continue; }
+    const cu = e.costoV/e.qty, v = Math.min(e.qty, e.vendidas||0);
+    r.nVenta++; r.invertido += e.costoV; r.cobrado += e.cobrado||0; r.costoVendido += cu*v; r.stock += cu*(e.qty-v); r.stockU += e.qty-v;
+  }
+  r.ganancia = r.cobrado - r.costoVendido;
+  return r;
+}
+function renderSeg(){
+  const R = resumen(S.registro), tot = R.invertido + R.personal;
+  const tile = (cls, lbl, v, sub) => '<div class="tile '+cls+'"><span class="lbl">'+lbl+'</span><b>'+v+'</b><small>'+sub+'</small></div>';
+  $('tiles').innerHTML =
+    tile('main','Ganancia', '<span class="'+(R.ganancia<0?'neg':R.ganancia>0?'pos':'')+'">'+money(R.ganancia)+'</span>', 'cobrado − costo de lo vendido') +
+    tile('','Cobrado', money(R.cobrado), R.nVenta+' pieza'+(R.nVenta===1?'':'s')+' para venta') +
+    tile('','Costo de lo vendido', money(R.costoVendido), 'lo que te salió fabricarlo') +
+    tile('','Stock sin vender', money(R.stock), R.stockU+' u. a costo') +
+    tile('','Gastado en piezas para vos', money(R.personal), R.nPers+' pieza'+(R.nPers===1?'':'s')) +
+    tile('','Gastado en total', money(tot), 'venta + para vos');
+
+  const por = {};
+  for(const e of S.registro){ (por[e.fecha.slice(0,7)] = por[e.fecha.slice(0,7)] || []).push(e); }
+  const meses = Object.keys(por).sort().reverse();
+  $('meses').innerHTML = meses.length
+    ? '<tr><th>Mes</th><th>Cobrado</th><th>Costo vendido</th><th>Ganancia</th><th>Para vos</th></tr>' + meses.map(m => {
+        const r = resumen(por[m]);
+        return '<tr><td>'+mesNombre(m)+'</td><td>'+money(r.cobrado)+'</td><td>'+money(r.costoVendido)+'</td><td class="'+(r.ganancia<0?'neg':r.ganancia>0?'pos':'')+'">'+money(r.ganancia)+'</td><td>'+money(r.personal)+'</td></tr>';
+      }).join('')
+    : '<tr><td style="text-align:left;color:var(--mute)">Todavía no hay nada guardado. Cuando calcules una pieza, tocá «Guardar en el seguimiento».</td></tr>';
+
+  document.querySelectorAll('#filtros button').forEach(b => b.classList.toggle('on', b.dataset.f === S.filtro));
+  const vis = S.registro.filter(e => S.filtro === 'todas' || e.tipo === S.filtro);
+  $('lista').innerHTML = vis.length ? vis.map(e => {
+    const meta = fechaCorta(e.fecha)+' · '+e.mat+' · '+(Math.round(e.g*10)/10)+' g · '+dur(e.h,e.mi)+' · '+e.qty+' u.';
+    const top = '<div class="reg-top"><button class="tipo '+e.tipo+'" data-act="tipo" title="Cambiar entre venta y para mí">'+(e.tipo==='venta'?'Venta':'Para mí')+'</button>'
+      + '<div class="reg-nombre"><b>'+esc(e.nombre)+'</b><small>'+meta+'</small></div><button data-act="del">Quitar</button></div>';
+    if(e.tipo === 'personal') return '<div class="reg" data-id="'+e.id+'">'+top+'<div class="reg-grid"><div><span class="lbl">Costo de hacerla</span><b>'+money(e.costoP)+'</b></div></div></div>';
+    const v = Math.min(e.qty, e.vendidas||0), gan = (e.cobrado||0) - e.costoV/e.qty*v;
+    return '<div class="reg" data-id="'+e.id+'">'+top+'<div class="reg-grid">'
+      + '<div><span class="lbl">Costo</span><b>'+money(e.costoV)+'</b></div>'
+      + '<div><span class="lbl">Precio c/u</span><b>'+money(e.precio)+'</b></div>'
+      + '<label><span class="lbl">Vendidas (de '+e.qty+')</span><input type="number" min="0" max="'+e.qty+'" step="1" value="'+(e.vendidas||0)+'" data-f="vendidas"></label>'
+      + '<label><span class="lbl">Cobrado $</span><input type="number" min="0" step="any" value="'+(Math.round((e.cobrado||0)*100)/100)+'" data-f="cobrado"></label>'
+      + '<div><span class="lbl">Ganancia</span><b class="'+(gan<0?'neg':gan>0?'pos':'')+'">'+money(gan)+'</b></div>'
+      + (v < e.qty ? '<button data-act="vendida">Marcar vendida</button>' : '<span class="mute">Vendida ✓</span>')
+      + '</div></div>';
+  }).join('') : '<p class="hint" style="margin:8px 0">Nada para mostrar en este filtro.</p>';
+  $('dondeDatos').textContent = S.server
+    ? 'Los datos se guardan en tu PC (carpeta datos del programa) y hay una copia en este navegador.'
+    : 'Los datos se guardan solo en este navegador. Hacé un respaldo (.json) de vez en cuando, y si abrís la calculadora con el atajo de tu PC usá «Restaurar respaldo» para pasarlos.';
+}
+function guardarRegistro(){
+  if(!last || (last.g <= 0 && last.total <= 0)){ toast('Cargá la pieza primero'); return; }
+  S.registro.unshift({id:Date.now(), fecha:hoy(), nombre:last.nombre, tipo:last.tipo, mat:last.mat, g:last.g, h:last.h, mi:last.mi, qty:last.qty,
+    costoV:last.costoV, costoP:last.costoP, precio:last.precio, vendidas:0, cobrado:0, cobradoManual:false, archivo:S.archivo, perfil:S.perfil});
+  persist(); renderSeg(); toast('Guardado en el seguimiento');
+}
+
+/* ---------- exportar / respaldo ---------- */
+function descargar(nombre, contenido, tipo){
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([contenido], {type:tipo})); a.download = nombre;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+function csv(){
+  const n = x => String(Math.round(x*100)/100).replace('.',',');
+  const filas = [['Fecha','Pieza','Tipo','Material','Gramos','Minutos','Cantidad','Costo total','Precio unitario','Vendidas','Cobrado','Ganancia']];
+  for(const e of S.registro){
+    const v = Math.min(e.qty, e.vendidas||0), gan = e.tipo === 'venta' ? (e.cobrado||0) - e.costoV/e.qty*v : 0;
+    filas.push([e.fecha, '"'+String(e.nombre).replace(/"/g,'""')+'"', e.tipo === 'venta' ? 'Venta' : 'Para mí', e.mat, n(e.g), e.h*60+e.mi, e.qty, n(costoDe(e)), e.tipo === 'venta' ? n(e.precio) : '', e.tipo === 'venta' ? v : '', e.tipo === 'venta' ? n(e.cobrado||0) : '', e.tipo === 'venta' ? n(gan) : '']);
+  }
+  descargar('seguimiento-3d-'+hoy()+'.csv', '﻿' + filas.map(f => f.join(';')).join('\r\n'), 'text/csv;charset=utf-8');
+}
+
+/* ---------- texto y presupuesto para el cliente ---------- */
+function textoCliente(){
+  const q = last;
+  return q.nombre + '\n' + q.mat + ' · ' + q.qty + (q.qty>1?' unidades':' unidad') + '\nPrecio por unidad: ' + money(q.precio) + (q.qty>1?'\nTotal: ' + money(q.saleTot):'');
+}
+async function copiar(txt){
+  try{ await navigator.clipboard.writeText(txt); }
+  catch(e){ const t=document.createElement('textarea'); t.value=txt; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); }
+  toast('Copiado');
+}
+
+/* ---------- eventos ---------- */
+function ligar(){
+  IDS.forEach(id => {
+    $(id).addEventListener('input', () => {
+      if(id === 'nombre') $('nombre').dataset.auto = '0';
+      if(['gramos','horas','minutos'].includes(id)) S.manual = true;
+      calc();
+    });
+    if(['mat','proceso','soportes','relleno','orient'].includes(id)) $(id).addEventListener('change', relaminarSoon);
+    if(id === 'mat' || id === 'relleno') $(id).addEventListener('input', relaminarSoon);
+  });
+  document.querySelectorAll('#pills button').forEach(b => b.addEventListener('click', () => { $('margen').value = b.dataset.m; calc(); }));
+  document.querySelectorAll('#tipoSeg button').forEach(b => b.addEventListener('click', () => { S.tipo = b.dataset.t; calc(); }));
+  document.querySelectorAll('#filtros button').forEach(b => b.addEventListener('click', () => { S.filtro = b.dataset.f; renderSeg(); }));
+
+  const drop = $('drop');
+  drop.addEventListener('click', () => $('file').click());
+  $('file').addEventListener('change', e => { procesarArchivo(e.target.files[0]); e.target.value = ''; });
+  ['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', e => procesarArchivo(e.dataTransfer.files[0]));
+  window.addEventListener('dragover', e => e.preventDefault());
+  window.addEventListener('drop', e => { e.preventDefault(); if(!drop.contains(e.target) && e.dataTransfer.files[0]) procesarArchivo(e.dataTransfer.files[0]); });
+
+  $('bGuardar').addEventListener('click', guardarRegistro);
+  $('bCopiar').addEventListener('click', () => copiar(textoCliente()));
+  $('bImprimir').addEventListener('click', () => {
+    const q = last;
+    $('quote').innerHTML = '<h1>Presupuesto</h1><div>'+new Date().toLocaleDateString('es-AR')+'</div>'
+      + '<table><tr><th>Pieza</th><th>Material</th><th class="r">Cant.</th><th class="r">Precio unit.</th><th class="r">Subtotal</th></tr>'
+      + '<tr><td>'+esc(q.nombre)+'</td><td>'+q.mat+'</td><td class="r">'+q.qty+'</td><td class="r">'+money(q.precio)+'</td><td class="r">'+money(q.saleTot)+'</td></tr>'
+      + '<tr class="tot"><td colspan="4">Total</td><td class="r">'+money(q.saleTot)+'</td></tr></table>'
+      + '<div class="nota">Impresión 3D en '+q.mat+'. Presupuesto sujeto a cambios de precio de materiales.</div>';
+    window.print();
+  });
+  $('bReset').addEventListener('click', () => { if(confirm('¿Volver los precios y ajustes a los valores iniciales? El seguimiento no se toca.')){ PRECIOS.forEach(id => setVal(id, DEF[id])); calc(); } });
+
+  $('lista').addEventListener('click', e => {
+    const b = e.target.closest('button[data-act]'); if(!b) return;
+    const row = b.closest('.reg'), x = S.registro.find(r => String(r.id) === row.dataset.id); if(!x) return;
+    if(b.dataset.act === 'del'){ if(confirm('¿Quitar «'+x.nombre+'» del seguimiento?')) S.registro = S.registro.filter(r => r !== x); }
+    else if(b.dataset.act === 'tipo'){ x.tipo = x.tipo === 'venta' ? 'personal' : 'venta'; }
+    else if(b.dataset.act === 'vendida'){ x.vendidas = x.qty; if(!x.cobradoManual) x.cobrado = x.precio*x.qty; }
+    persist(); renderSeg();
+  });
+  $('lista').addEventListener('change', e => {
+    const f = e.target.dataset.f; if(!f) return;
+    const x = S.registro.find(r => String(r.id) === e.target.closest('.reg').dataset.id); if(!x) return;
+    const v = Math.max(0, parseFloat(e.target.value) || 0);
+    if(f === 'vendidas'){ x.vendidas = Math.min(x.qty, Math.round(v)); if(!x.cobradoManual) x.cobrado = x.precio*x.vendidas; }
+    else { x.cobrado = v; x.cobradoManual = true; }
+    persist(); renderSeg();
+  });
+  $('bCsv').addEventListener('click', csv);
+  $('bResp').addEventListener('click', () => descargar('respaldo-calculadora-3d-'+hoy()+'.json', JSON.stringify({v:2, cfg:cfgActual(), registro:S.registro}, null, 1), 'application/json'));
+  $('bRest').addEventListener('click', () => $('fileRest').click());
+  $('fileRest').addEventListener('change', async e => {
+    const f = e.target.files[0]; e.target.value = ''; if(!f) return;
+    try{
+      const d = JSON.parse(await f.text());
+      if(!Array.isArray(d.registro)) throw new Error('no es un respaldo de la calculadora');
+      if(!confirm('Esto reemplaza el seguimiento actual ('+S.registro.length+' piezas) por el del respaldo ('+d.registro.length+'). ¿Seguro?')) return;
+      S.registro = d.registro; if(d.cfg) aplicarCfg(d.cfg); persist(); calc(); renderSeg(); toast('Respaldo restaurado');
+    }catch(err){ alert('No pude leer el respaldo: ' + err.message); }
+  });
+}
+function aplicarCfg(cfg){
+  IDS.forEach(id => setVal(id, cfg[id] !== undefined && cfg[id] !== null ? cfg[id] : DEF[id]));
+  S.tipo = cfg.tipo === 'personal' ? 'personal' : 'venta';
+  if(S.server && S.est && !$('proceso').value) $('proceso').value = S.est.procesoPorDefecto;
+}
+
+/* ---------- arranque ---------- */
+(async function iniciar(){
+  await detectarServidor();
+  const d = await cargarDatos();
+  S.registro = Array.isArray(d.registro) ? d.registro.filter(e => e && e.fecha) : [];
+  aplicarCfg(d.cfg || {});
+  if(S.server && S.est && ![...$('proceso').options].some(o => o.value === $('proceso').value)) $('proceso').value = S.est.procesoPorDefecto;
+  // controles que solo tienen sentido con Orca
+  ['lProceso','lSoportes','lOrient'].forEach(id => $(id).hidden = !S.orca);
+  const chip = $('chipOrca');
+  if(S.orca){ chip.className = 'est ok'; chip.textContent = 'Orca conectado'; }
+  else if(S.server){ chip.className = 'est warn'; chip.textContent = 'Orca no encontrado · estimado'; }
+  else { chip.className = 'est warn'; chip.textContent = 'Sin Orca · estimado desde el STL'; }
+  ligar(); calc(); renderSeg();
+})();
+</script>
+</body>
+</html>
