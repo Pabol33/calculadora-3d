@@ -299,7 +299,7 @@ a.boton:focus-visible{outline:2px solid var(--acc-hi);outline-offset:2px}
       <section class="card c-pieza">
         <h2>Pieza</h2>
         <div class="seg" id="tipoSeg" role="group" aria-label="Para qué es la pieza"><button type="button" data-t="venta">Para venta</button><button type="button" data-t="personal">Para mí</button></div>
-        <div class="enlace" id="bloqueEnlace" hidden>
+        <div class="enlace" id="bloqueEnlace">
           <label for="enlace"><span class="t">Enlace de MakerWorld</span></label>
           <div class="enlace-row">
             <input id="enlace" type="url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Pegá acá el enlace de la pieza">
@@ -1039,7 +1039,13 @@ function aplicarCfg(cfg){
   else if(S.server){ chip.className = 'est warn'; chip.textContent = 'Orca no encontrado · estimado'; }
   else { chip.className = 'est warn'; chip.textContent = 'No estás conectado a tu PC, así que no hay Orca: estimo desde el STL. Para usar Orca abrí el enlace del celular que arma tu PC («Usar desde el celular»).'; }
   // con la calculadora de la PC (o el celular conectado a ella): enlace de MakerWorld, guardar en la carpeta y enlace para el celular
-  $('bloqueEnlace').hidden = !S.server;
+  // el campo del enlace se ve siempre; sin conexión con la PC avisa qué hacer (la versión de internet no llega a MakerWorld)
+  if(!S.server){
+    $('enlace').disabled = true; $('bEnlace').disabled = true;
+    $('enlace').placeholder = 'Hace falta estar conectado a tu PC';
+    setEstadoEnlace('warn', '<b>Para leer enlaces de MakerWorld hay que abrir la calculadora a través de tu PC.</b> Esta es la versión de internet y no llega a tu PC ni a MakerWorld. En la PC abrí la calculadora con el atajo, tocá «Usar desde el celular» (la primera vez ejecutá <b>Permitir celular.bat</b>) y abrí ese enlace en el celular, con el WiFi de tu casa.');
+  }
+  $('bloqueEnlace').hidden = false;
   const carpeta = S.server && S.est && S.est.carpeta;
   $('lGuardar').hidden = !(carpeta && carpeta.existe);
   if(carpeta && carpeta.existe) $('rutaImprimir').textContent = 'Se guarda en ' + carpeta.ruta;
